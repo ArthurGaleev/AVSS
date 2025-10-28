@@ -75,6 +75,7 @@ def main(config):
         text_encoder=text_encoder,
         config=config,
         device=device,
+        dtype=config.trainer.get("dtype", "float32"),
         dataloaders=dataloaders,
         epoch_len=epoch_len,
         logger=logger,

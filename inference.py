@@ -58,6 +58,7 @@ def main(config):
         model=model,
         config=config,
         device=device,
+        dtype=config.inferencer.get("dtype", "float32"),
         dataloaders=dataloaders,
         text_encoder=text_encoder,
         batch_transforms=batch_transforms,

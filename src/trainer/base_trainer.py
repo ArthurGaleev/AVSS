@@ -3,10 +3,12 @@ from abc import abstractmethod
 import torch
 from numpy import inf
 from torch.nn.utils import clip_grad_norm_
+from torch.amp import autocast, GradScaler
 from tqdm.auto import tqdm
 
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
+from src.utils.torch_utils import str_to_dtype, dtype_to_str
 from src.utils.io_utils import ROOT_PATH
 
 
@@ -25,6 +27,7 @@ class BaseTrainer:
         text_encoder,
         config,
         device,
+        dtype,
         dataloaders,
         logger,
         writer,
@@ -45,6 +48,7 @@ class BaseTrainer:
             text_encoder (CTCTextEncoder): text encoder.
             config (DictConfig): experiment config containing training config.
             device (str): device for tensors and model.
+            dtype (torch.dtype): data type for tensors and model.
             dataloaders (dict[DataLoader]): dataloaders for different
                 sets of data.
             logger (Logger): logger that logs output.
@@ -75,6 +79,14 @@ class BaseTrainer:
         self.text_encoder = text_encoder
         self.batch_transforms = batch_transforms
         self.accumulation_steps = config.trainer.get("accumulation_steps", 1)
+
+        # autocast staff
+        self.training_dtype = str_to_dtype(dtype)
+
+        is_auto_cast_enabled = self.training_dtype != torch.float32
+
+        self.autocast_context = autocast(device, dtype=self.training_dtype, enabled=is_auto_cast_enabled)
+        self.autocast_grad_scaler = GradScaler(device, enabled=is_auto_cast_enabled)
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -387,6 +399,7 @@ class BaseTrainer:
         config.trainer.max_grad_norm
         """
         if self.config["trainer"].get("max_grad_norm", None) is not None:
+            self.autocast_grad_scaler.unscale_(self.optimizer)
             clip_grad_norm_(
                 self.model.parameters(), self.config["trainer"]["max_grad_norm"]
             )
@@ -477,6 +490,7 @@ class BaseTrainer:
             "state_dict": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
+            "training_dtype": dtype_to_str(self.training_dtype),
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
@@ -532,6 +546,12 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+
+        if checkpoint.get("training_dtype") != dtype_to_str(self.training_dtype):
+            self.logger.warning(
+                "Warning: training_dtype given in the config file is different "
+                "from that of the checkpoint. training_dtype parameter is not resumed."
+            )
 
         self.logger.info(
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"

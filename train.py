@@ -7,7 +7,7 @@ from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
-from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+from src.utils.init_utils import set_random_seed, setup_saving_and_logging, select_most_suitable_gpu
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -28,10 +28,12 @@ def main(config):
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
 
-    if config.trainer.device == "auto":
+    device = config.trainer.device
+    if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
-    else:
-        device = config.trainer.device
+    if device == "cuda":
+        device, free_memories = select_most_suitable_gpu()
+        logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
 
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder)

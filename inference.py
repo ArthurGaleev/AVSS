@@ -22,7 +22,7 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
-    set_random_seed(config.inferencer.seed)
+    set_random_seed(config.inferencer.seed, config.trainer.get("save_reproducibility", True))
 
     device = config.inferencer.device
     if device == "auto":

@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging, select_most_suitable_gpu
+from src.utils.torch_utils import set_tf32_allowance
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -23,6 +24,7 @@ def main(config):
         config (DictConfig): hydra experiment config.
     """
     set_random_seed(config.trainer.seed, config.trainer.get("save_reproducibility", True))
+    set_tf32_allowance(config.trainer.get("tf32_allowance", False))
 
     project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)

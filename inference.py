@@ -7,6 +7,7 @@ from hydra.utils import instantiate
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
 from src.utils.init_utils import set_random_seed, select_most_suitable_gpu
+from src.utils.torch_utils import set_tf32_allowance
 from src.utils.io_utils import ROOT_PATH
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -23,6 +24,7 @@ def main(config):
         config (DictConfig): hydra experiment config.
     """
     set_random_seed(config.inferencer.seed, config.trainer.get("save_reproducibility", True))
+    set_tf32_allowance(config.inferencer.get("tf32_allowance", False))
 
     device = config.inferencer.device
     if device == "auto":

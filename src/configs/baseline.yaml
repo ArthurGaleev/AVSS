@@ -34,3 +34,4 @@ trainer:
   save_dir: "saved"
   seed: 1
   dtype: "bfloat16" # training dtype: "float32", "float16", "bfloat16"
+  tf32_allowance: false # allow TF32 mode on Ampere GPUs

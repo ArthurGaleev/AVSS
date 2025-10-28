@@ -12,3 +12,4 @@ inferencer:
   seed: 1
   from_pretrained: "saved/model_best.pth" # path to the pretrained model
   dtype: "float32" # inference dtype: "float32", "float16", "bfloat16"
+  tf32_allowance: false # allow TF32 mode on Ampere GPUs

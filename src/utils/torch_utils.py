@@ -51,3 +51,15 @@ def dtype_to_str(dtype: torch.dtype) -> str:
     if dtype not in dtype_mapping:
         raise ValueError(f"Unsupported torch dtype: {dtype}")
     return dtype_mapping[dtype]
+
+
+def set_tf32_allowance(allow: bool):
+    """
+    Set the allowance for TF32 precision on NVIDIA Ampere GPUs.
+
+    Args:
+        allow (bool): If True, enables TF32 for matrix multiplications and convolutions.
+                      If False, disables TF32.
+    """
+    torch.backends.cuda.matmul.allow_tf32 = allow
+    torch.backends.cudnn.allow_tf32 = allow

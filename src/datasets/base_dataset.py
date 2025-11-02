@@ -72,22 +72,31 @@ class BaseDataset(Dataset):
                 (a single dataset element).
         """
         data_dict = self._index[ind]
-        audio_path = data_dict["path"]
-        audio = self.load_audio(audio_path)
-
-        spectrogram = self.get_spectrogram(audio)
-
+        audio_path_mix=data_dict["audio_path_mix"]
+        audio_path_first=data_dict["audio_path_first"]
+        audio_path_second=data_dict["audio_path_second"]
+        audio_mix = self.load_audio(audio_path_mix)
+        audio_first = self.load_audio(audio_path_first)
+        audio_second = self.load_audio(audio_path_second)
         instance_data = {
-            "audio": audio,
-            "spectrogram": spectrogram,
-            "audio_path": audio_path,
+            "audio_first": audio_first,
+            "audio_second": audio_second,
+            "audio_mix": audio_mix,
         }
-
-        # TODO think of how to apply wave augs before calculating spectrogram
-        # Note: you may want to preserve both audio in time domain and
-        # in time-frequency domain for logging
-        instance_data = self.preprocess_data(instance_data)
-
+        instance_data = self.preprocess_data(instance_data) #use only wave augs
+        spectrograms = self.get_spectrogram(instance_data)
+        instance_data.update(
+            self.preprocess_data(
+                spectrograms #use only spectrogram augs
+            )
+        )
+        instance_data.update(
+            {
+                "audio_path_first":audio_path_first,
+                "audio_path_second":audio_path_second,
+                "audio_path_mix":audio_path_mix
+            }
+        )
         return instance_data
 
     def __len__(self):
@@ -104,7 +113,7 @@ class BaseDataset(Dataset):
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         return audio_tensor
 
-    def get_spectrogram(self, audio):
+    def get_spectrogram(self, dict_audio):
         """
         Special instance transform with a special key to
         get spectrogram from audio.
@@ -114,7 +123,11 @@ class BaseDataset(Dataset):
         Returns:
             spectrogram (Tensor): spectrogram for the audio.
         """
-        return self.instance_transforms["get_spectrogram"](audio)
+        dict_spectrogram={}
+        for name_audio, audio in dict_audio.items():
+            _, name=name_audio.split("_")
+            dict_spectrogram[f"spectrogram_{name}"]=self.instance_transforms["get_spectrogram"](audio).squeeze(0)
+        return dict_spectrogram
 
     def preprocess_data(self, instance_data):
         """
@@ -195,7 +208,7 @@ class BaseDataset(Dataset):
                 such as label and object path.
         """
         for entry in index:
-            assert "path" in entry, (
+            assert "audio_path_mix" in entry and "audio_path_first" in entry and  "audio_path_second" in entry, (
                 "Each dataset item should include field 'path'" " - path to audio file."
             )
             assert "audio_len" in entry, (

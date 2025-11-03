@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 
 
-
 def pad_tensors(tensors: list[torch.Tensor]):
     """
     pad tensors with same number of dimensiona to the same shape
@@ -42,17 +41,4 @@ def collate_fn(dataset_items: list[dict]):
         "audio_second": batch_by_column["audio_second"],
         "audio_mix": batch_by_column["audio_mix"],
     }
-    result_batch.update(
-        {
-            "spectrogram_lengths_first": torch.tensor(
-                [spec.shape[1] for spec in batch_by_column["spectrogram_first"]]
-            ),
-            "spectrogram_lengths_second": torch.tensor(
-                [spec.shape[1] for spec in batch_by_column["spectrogram_second"]]
-            ),
-            "spectrogram_lengths_mix": torch.tensor(
-                [spec.shape[1] for spec in batch_by_column["spectrogram_mix"]]
-            )
-        }
-    )
     return result_batch

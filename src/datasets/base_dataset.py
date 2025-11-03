@@ -6,7 +6,6 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -45,9 +44,7 @@ class BaseDataset(Dataset):
         """
         self._assert_index_is_valid(index)
 
-        index = self._filter_records_from_dataset(
-            index, max_audio_length
-        )
+        index = self._filter_records_from_dataset(index, max_audio_length)
         index = self._shuffle_and_limit_index(index, limit, shuffle_index)
         if not shuffle_index:
             index = self._sort_index(index)
@@ -72,9 +69,9 @@ class BaseDataset(Dataset):
                 (a single dataset element).
         """
         data_dict = self._index[ind]
-        audio_path_mix=data_dict["audio_path_mix"]
-        audio_path_first=data_dict["audio_path_first"]
-        audio_path_second=data_dict["audio_path_second"]
+        audio_path_mix = data_dict["audio_path_mix"]
+        audio_path_first = data_dict["audio_path_first"]
+        audio_path_second = data_dict["audio_path_second"]
         audio_mix = self.load_audio(audio_path_mix)
         audio_first = self.load_audio(audio_path_first)
         audio_second = self.load_audio(audio_path_second)
@@ -83,19 +80,23 @@ class BaseDataset(Dataset):
             "audio_second": audio_second,
             "audio_mix": audio_mix,
         }
-        instance_data = self.preprocess_data(instance_data) #use only wave augs
+        instance_data = self.preprocess_data(instance_data)  # use only wave augs
         spectrograms = self.get_spectrogram(instance_data)
         instance_data.update(
-            self.preprocess_data(
-                spectrograms #use only spectrogram augs
-            )
+            self.preprocess_data(spectrograms)  # use only spectrogram augs
         )
         instance_data.update(
             {
-                "audio_path_first":audio_path_first,
-                "audio_path_second":audio_path_second,
-                "audio_path_mix":audio_path_mix
+                "audio_path_first": audio_path_first,
+                "audio_path_second": audio_path_second,
+                "audio_path_mix": audio_path_mix,
             }
+        )
+        instance_data["mask_first"] = (
+            instance_data["spectrogram_first"] / instance_data["spectrogram_mix"]
+        )
+        instance_data["mask_second"] = (
+            instance_data["spectrogram_second"] / instance_data["spectrogram_mix"]
         )
         return instance_data
 
@@ -123,10 +124,12 @@ class BaseDataset(Dataset):
         Returns:
             spectrogram (Tensor): spectrogram for the audio.
         """
-        dict_spectrogram={}
+        dict_spectrogram = {}
         for name_audio, audio in dict_audio.items():
-            _, name=name_audio.split("_")
-            dict_spectrogram[f"spectrogram_{name}"]=self.instance_transforms["get_spectrogram"](audio).squeeze(0)
+            _, name = name_audio.split("_")
+            dict_spectrogram[f"spectrogram_{name}"] = self.instance_transforms[
+                "get_spectrogram"
+            ](audio).squeeze(0)
         return dict_spectrogram
 
     def preprocess_data(self, instance_data):
@@ -145,7 +148,10 @@ class BaseDataset(Dataset):
         """
         if self.instance_transforms is not None:
             for transform_name in self.instance_transforms.keys():
-                if transform_name == "get_spectrogram":
+                if (
+                    transform_name == "get_spectrogram"
+                    or transform_name not in instance_data
+                ):
                     continue  # skip special key
                 instance_data[transform_name] = self.instance_transforms[
                     transform_name
@@ -178,7 +184,7 @@ class BaseDataset(Dataset):
             )
             _total = exceeds_audio_length.sum()
             logger.info(
-                f"{_total} ({_total / initial_size:.1%}) records are longer then "
+                f"{_total} ({_total / initial_size: .1%}) records are longer then "
                 f"{max_audio_length} seconds. Excluding them."
             )
         else:
@@ -208,7 +214,11 @@ class BaseDataset(Dataset):
                 such as label and object path.
         """
         for entry in index:
-            assert "audio_path_mix" in entry and "audio_path_first" in entry and  "audio_path_second" in entry, (
+            assert (
+                "audio_path_mix" in entry
+                and "audio_path_first" in entry
+                and "audio_path_second" in entry
+            ), (
                 "Each dataset item should include field 'path'" " - path to audio file."
             )
             assert "audio_len" in entry, (

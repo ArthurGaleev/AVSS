@@ -19,9 +19,12 @@ class SiSdr(BaseMetric):
     def __call__(
         self, audio_pred_first, audio_first, audio_pred_second, audio_second, **batch
     ):
-        # audio_pred_first=[audio_pred_first[i, ...] for i in range(audio_pred_first.shape[0])]
-        # audio_pred_second=[audio_pred_second[i, ...] for i in range(audio_pred_second.shape[0])]
-        # TODO Uncomment when fixed reconstruct
+        audio_pred_first = [
+            audio_pred_first[i, ...] for i in range(audio_pred_first.shape[0])
+        ]
+        audio_pred_second = [
+            audio_pred_second[i, ...] for i in range(audio_pred_second.shape[0])
+        ]
         sisdrs = []
         if self.compare == "first":
             ests, targets = audio_pred_first, audio_first

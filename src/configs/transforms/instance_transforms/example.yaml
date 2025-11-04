@@ -1,28 +1,6 @@
 train:
-  get_spectrogram: # special key for getting spectrogram
-    _target_: torchaudio.transforms.MelSpectrogram
-    sample_rate: 16000
-    n_fft: 1024
-    hop_length: 256
-    win_length: 1024
-    n_mels: 80
-  # reconstruct_spec_func:
-  #   _target_: src.model.utils.reconstruct_spec_func
-  #   n_fft: ${transforms.instance_transforms.train.get_spectrogram.n_fft}
-  #   window_len: ${transforms.instance_transforms.train.get_spectrogram.win_length}
-  #   hop_len: ${transforms.instance_transforms.train.get_spectrogram.hop_length}
-  #   n_mels: ${transforms.instance_transforms.train.get_spectrogram.n_mels}
-  #   sample_rate: ${trainer.sample_rate}
-  audio_mix: # name of the tensor on which we apply transform
-    _target_: torchvision.transforms.v2.Compose
-    transforms:
-      - _target_: src.transforms.wav_augs.Gain
+    # audio_mix: # name of the tensor on which we apply transform
+    #   _target_: torchvision.transforms.v2.Compose
+    #   transforms:
+    #     - _target_: src.transforms.wav_augs.Gain
 inference:
-  get_spectrogram:
-    get_spectrogram: # special key for getting spectrogram
-    _target_: torchaudio.transforms.MelSpectrogram
-    sample_rate: 16000
-    n_fft: 1024
-    hop_length: 256
-    win_length: 1024
-    n_mels: 80

@@ -1,0 +1,21 @@
+train:
+  reconstruct_spec_func:
+    _target_: src.transforms.Reconstruct
+    n_fft: ${transforms.batch_transforms.train.get_spectrogram.n_fft}
+    window_len: ${transforms.batch_transforms.train.get_spectrogram.window_len}
+    hop_len: ${transforms.batch_transforms.train.get_spectrogram.hop_len}
+    n_mels: ${transforms.batch_transforms.train.get_spectrogram.n_mels}
+    sample_rate: ${trainer.sample_rate}
+    power: ${transforms.batch_transforms.train.get_spectrogram.power}
+    mode: ${transforms.batch_transforms.train.get_spectrogram.mode}
+
+inference:
+  reconstruct_spec_func:
+    _target_: src.transforms.Reconstruct
+    n_fft: ${transforms.batch_transforms.train.get_spectrogram.n_fft}
+    window_len: ${transforms.batch_transforms.train.get_spectrogram.window_len}
+    hop_len: ${transforms.batch_transforms.train.get_spectrogram.hop_len}
+    n_mels: ${transforms.batch_transforms.train.get_spectrogram.n_mels}
+    sample_rate: ${trainer.sample_rate}
+    power: ${transforms.batch_transforms.train.get_spectrogram.power}
+    mode: ${transforms.batch_transforms.train.get_spectrogram.mode}

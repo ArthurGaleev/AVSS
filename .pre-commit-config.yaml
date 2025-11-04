@@ -27,4 +27,4 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
-        args: [ "--extend-ignore=E203" ]
+        args: [ "--extend-ignore=E203, E402" ]

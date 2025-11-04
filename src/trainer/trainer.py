@@ -32,16 +32,17 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        batch = self.transform_batch(
+            batch, self.batch_transforms
+        )  # transform batch on device -- faster
 
         metric_funcs = self.metrics["inference"]
         if self.is_train:
             metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
-
         outputs = self.model(**batch)
         batch.update(outputs)
-
+        batch = self.transform_batch(batch, self.reconstruct_transforms)
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
@@ -76,16 +77,14 @@ class Trainer(BaseTrainer):
         # such as audio or images, for example
 
         # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            self.log_spectrogram(**batch)
-        else:
-            # Log Stuff
-            self.log_spectrogram(**batch)
-            self.log_predictions(**batch)
+        # if mode == "train":  # the method is called only every self.log_step steps
+        #     self.log_spectrogram(**batch)
+        # else:
+        #     # Log Stuff
+        #     self.log_spectrogram(**batch)
+        #     self.log_predictions(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
         image = plot_spectrogram(spectrogram_for_plot)
         self.writer.add_image("spectrogram", image)
-
-    

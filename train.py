@@ -34,7 +34,9 @@ def main(config):
         device = config.trainer.device
     # setup data_loader instances
     # batch_transforms should be put on device
-    dataloaders, batch_transforms = get_dataloaders(config, device)
+    dataloaders, batch_transforms, reconstruct_transforms = get_dataloaders(
+        config, device
+    )
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
@@ -46,9 +48,7 @@ def main(config):
     metrics = {"train": [], "inference": []}
     for metric_type in ["train", "inference"]:
         for metric_config in config.metrics.get(metric_type, []):
-            metrics[metric_type].append(
-                instantiate(metric_config)
-            )
+            metrics[metric_type].append(instantiate(metric_config))
 
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
@@ -58,7 +58,6 @@ def main(config):
     # epoch_len = number of iterations for iteration-based training
     # epoch_len = None or len(dataloader) for epoch-based training
     epoch_len = config.trainer.get("epoch_len")
-
     trainer = Trainer(
         model=model,
         criterion=loss_function,
@@ -73,6 +72,7 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
+        reconstruct_transforms=reconstruct_transforms,
     )
 
     trainer.train()

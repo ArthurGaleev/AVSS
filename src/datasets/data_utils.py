@@ -18,7 +18,7 @@ def inf_loop(dataloader):
         yield from loader
 
 
-def move_batch_transforms_to_device(batch_transforms, device):
+def move_transforms_to_device(batch_transforms, device):
     """
     Move batch_transforms to device.
 
@@ -60,8 +60,9 @@ def get_dataloaders(config, device):
     """
     # transforms or augmentations init
     batch_transforms = instantiate(config.transforms.batch_transforms)
-    move_batch_transforms_to_device(batch_transforms, device)
-
+    reconstruct_transforms = instantiate(config.transforms.reconstruct_transforms)
+    move_transforms_to_device(batch_transforms, device)
+    move_transforms_to_device(reconstruct_transforms, device)
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
@@ -85,4 +86,4 @@ def get_dataloaders(config, device):
         )
         dataloaders[dataset_partition] = partition_dataloader
 
-    return dataloaders, batch_transforms
+    return dataloaders, batch_transforms, reconstruct_transforms

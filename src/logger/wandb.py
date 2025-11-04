@@ -176,18 +176,6 @@ class WandBWriter:
             step=self.step,
         )
 
-    def add_text(self, text_name, text):
-        """
-        Log text to the experiment tracker.
-
-        Args:
-            text_name (str): name of the text to use in the tracker.
-            text (str): text content.
-        """
-        self.wandb.log(
-            {self._object_name(text_name): self.wandb.Html(text)}, step=self.step
-        )
-
     def add_histogram(self, hist_name, values_for_hist, bins=None):
         """
         Log histogram to the experiment tracker.

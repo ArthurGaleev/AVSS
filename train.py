@@ -37,9 +37,6 @@ def main(config):
         device, free_memories = select_most_suitable_gpu()
         logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
 
-    # setup text_encoder
-    text_encoder = instantiate(config.text_encoder)
-
     # setup data_loader instances
     # batch_transforms should be put on device
     dataloaders, batch_transforms, reconstruct_transforms = get_dataloaders(

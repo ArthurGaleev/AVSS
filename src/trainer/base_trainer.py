@@ -237,7 +237,7 @@ class BaseTrainer:
                 else:
                     raise e
 
-            self.train_metrics.update("grad_norm", self._get_grad_norm())
+            # self.train_metrics.update("grad_norm", self._get_grad_norm())
 
             # log current results
             if batch_idx % self.log_step == 0:

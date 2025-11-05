@@ -46,12 +46,12 @@ class Trainer(BaseTrainer):
             batch.update(all_losses)
 
         if self.is_train:
-            self.autocast_grad_scaler(batch["loss"]).backward()  # sum of all losses is always called loss
+            self.autocast_grad_scaler.scale(batch["loss"]).backward()  # sum of all losses is always called loss
             
             if update:
                 self._clip_grad_norm()
-                self.autocast_grad_scaler.step(self.optimizer)
-                self.autocast_grad_scaler.update()
+                # self.autocast_grad_scaler.step(self.optimizer)
+                # self.autocast_grad_scaler.update()
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 

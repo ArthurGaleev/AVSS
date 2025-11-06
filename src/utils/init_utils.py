@@ -161,6 +161,7 @@ def setup_saving_and_logging(config):
 
     return logger
 
+
 def select_most_suitable_gpu():
     """
     Select the most suitable GPU based on available memory.

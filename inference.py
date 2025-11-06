@@ -6,9 +6,9 @@ from hydra.utils import instantiate
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
-from src.utils.init_utils import set_random_seed, select_most_suitable_gpu
-from src.utils.torch_utils import set_tf32_allowance
+from src.utils.init_utils import select_most_suitable_gpu, set_random_seed
 from src.utils.io_utils import ROOT_PATH
+from src.utils.torch_utils import set_tf32_allowance
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -23,7 +23,9 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
-    set_random_seed(config.inferencer.seed, config.trainer.get("save_reproducibility", True))
+    set_random_seed(
+        config.inferencer.seed, config.trainer.get("save_reproducibility", True)
+    )
     set_tf32_allowance(config.inferencer.get("tf32_allowance", False))
 
     device = config.inferencer.device
@@ -44,9 +46,7 @@ def main(config):
     # get metrics
     metrics = {"inference": []}
     for metric_config in config.metrics.get("inference", []):
-        metrics["inference"].append(
-            instantiate(metric_config)
-        )
+        metrics["inference"].append(instantiate(metric_config))
 
     # save_path for model predictions
     save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path

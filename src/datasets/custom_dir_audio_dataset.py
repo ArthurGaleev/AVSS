@@ -61,7 +61,7 @@ class YandexDownload(CustomDirAudioDataset):
         data_dir=None,
         part="train",
         *args,
-        **kwargs
+        **kwargs,
     ):
         assert download_name in YANDEX_URL
         if data_dir is None:

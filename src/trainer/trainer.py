@@ -41,17 +41,19 @@ class Trainer(BaseTrainer):
         with self.autocast_context:
             outputs = self.model(**batch)
             batch.update(outputs)
-            batch = self.transform_batch(batch, self.reconstruct_transforms)
+            # batch = self.transform_batch(batch, self.reconstruct_transforms)
             all_losses = self.criterion(**batch)
             batch.update(all_losses)
 
         if self.is_train:
-            self.autocast_grad_scaler.scale(batch["loss"]).backward()  # sum of all losses is always called loss
-            
+            self.autocast_grad_scaler.scale(
+                batch["loss"]
+            ).backward()  # sum of all losses is always called loss
+
             if update:
                 self._clip_grad_norm()
-                # self.autocast_grad_scaler.step(self.optimizer)
-                # self.autocast_grad_scaler.update()
+                self.autocast_grad_scaler.step(self.optimizer)
+                self.autocast_grad_scaler.update()
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 

@@ -22,4 +22,4 @@ class AudioMSELoss(torch.nn.Module):
         mse_loss_2 = torch.nn.MSELoss()(
             audio_pred_second, audio_first
         ) + torch.nn.MSELoss()(audio_pred_first, audio_second)
-        return {"loss": mse_loss_1.requires_grad_(True) if (mse_loss_1 < mse_loss_2) else mse_loss_2.requires_grad_(True)}
+        return {"loss": mse_loss_1 if (mse_loss_1 < mse_loss_2) else mse_loss_2}

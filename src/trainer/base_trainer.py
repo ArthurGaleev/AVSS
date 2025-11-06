@@ -2,14 +2,14 @@ from abc import abstractmethod
 
 import torch
 from numpy import inf
+from torch.amp import GradScaler, autocast
 from torch.nn.utils import clip_grad_norm_
-from torch.amp import autocast, GradScaler
 from tqdm.auto import tqdm
 
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
-from src.utils.torch_utils import str_to_dtype, dtype_to_str
 from src.utils.io_utils import ROOT_PATH
+from src.utils.torch_utils import dtype_to_str, str_to_dtype
 
 
 class BaseTrainer:
@@ -83,7 +83,9 @@ class BaseTrainer:
 
         is_auto_cast_enabled = self.training_dtype != torch.float32
 
-        self.autocast_context = autocast(device, dtype=self.training_dtype, enabled=is_auto_cast_enabled)
+        self.autocast_context = autocast(
+            device, dtype=self.training_dtype, enabled=is_auto_cast_enabled
+        )
         self.autocast_grad_scaler = GradScaler(device, enabled=is_auto_cast_enabled)
 
         # define dataloaders
@@ -237,7 +239,7 @@ class BaseTrainer:
                 else:
                     raise e
 
-            # self.train_metrics.update("grad_norm", self._get_grad_norm())
+            self.train_metrics.update("grad_norm", self._get_grad_norm())
 
             # log current results
             if batch_idx % self.log_step == 0:

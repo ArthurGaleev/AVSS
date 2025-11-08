@@ -60,9 +60,7 @@ def get_dataloaders(config, device):
     """
     # transforms or augmentations init
     batch_transforms = instantiate(config.transforms.batch_transforms)
-    reconstruct_transforms = instantiate(config.transforms.reconstruct_transforms)
     move_transforms_to_device(batch_transforms, device)
-    move_transforms_to_device(reconstruct_transforms, device)
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
@@ -86,4 +84,4 @@ def get_dataloaders(config, device):
         )
         dataloaders[dataset_partition] = partition_dataloader
 
-    return dataloaders, batch_transforms, reconstruct_transforms
+    return dataloaders, batch_transforms

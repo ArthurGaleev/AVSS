@@ -30,7 +30,6 @@ class BaseTrainer:
         epoch_len=None,
         skip_oom=True,
         batch_transforms=None,
-        reconstruct_transforms=None,
     ):
         """
         Args:
@@ -142,7 +141,6 @@ class BaseTrainer:
 
         if config.trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
-        self.reconstruct_transforms = reconstruct_transforms
 
     def train(self):
         """
@@ -350,7 +348,32 @@ class BaseTrainer:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 
-    def transform_batch(self, batch, transforms):
+    def get_spectrogram(self, batch):
+        new_data = {}
+        transform_type = "train" if self.is_train else "inference"
+        transforms = self.batch_transforms.get(transform_type)
+        if transforms is not None and "transfrom_spec_wav" in transforms.keys():
+            for key in ["audio_first", "audio_second", "audio_mix"]:
+                spec, phase = transforms["transfrom_spec_wav"].get_spectrogram(
+                    batch[key]
+                )
+                new_data[f"spectrogram_{key.split("_")[1]}"] = spec
+                if key == "audio_mix":
+                    new_data["phase_mix"] = phase
+        return new_data
+
+    def reconstruct_wav(self, batch):
+        new_data = {}
+        transform_type = "train" if self.is_train else "inference"
+        transforms = self.batch_transforms.get(transform_type)
+        if transforms is not None and "transfrom_spec_wav" in transforms.keys():
+            for key in ["spectrogram_first", "spectrogram_second"]:
+                new_data[f"audio_pred_{key.split("_")[1]}"] = transforms[
+                    "transfrom_spec_wav"
+                ].reconstruct_wav(batch[key], batch.get("phase_mix"))
+        return new_data
+
+    def transform_batch(self, batch):
         """
         Transforms elements in batch. Like instance transform inside the
         BaseDataset class, but for the whole batch. Improves pipeline speed,
@@ -367,21 +390,13 @@ class BaseTrainer:
         """
         # do batch transforms on device
         transform_type = "train" if self.is_train else "inference"
-        transforms = transforms.get(transform_type)
+        transforms = self.batch_transforms.get(transform_type)
         if transforms is not None:
             for transform_name in transforms.keys():
-                if transform_name == "get_spectrogram":
-                    for key in ["audio_first", "audio_second", "audio_mix"]:
-                        spec, phase = transforms[transform_name](batch[key])
-                        batch[f"spectrogram_{key.split("_")[1]}"] = spec
-                        if key == "audio_mix":
-                            batch["phase_mix"] = phase
-                    continue
-                if transform_name == "reconstruct_spec_func":
-                    for key in ["spectrogram_first", "spectrogram_second"]:
-                        batch[f"audio_pred_{key.split("_")[1]}"] = transforms[
-                            transform_name
-                        ](batch[key], batch.get("phase_mix"))
+                if (
+                    transform_name == "transfrom_spec_wav"
+                    or transform_name not in batch.keys()
+                ):
                     continue
                 batch[transform_name] = transforms[transform_name](
                     batch[transform_name]

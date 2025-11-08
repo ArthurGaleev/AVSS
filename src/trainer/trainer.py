@@ -32,17 +32,15 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(
-            batch, self.batch_transforms
-        )  # transform batch on device -- faster
-
+        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        batch.update(self.transform_batch(self.get_spectrogram(batch)))
         metric_funcs = self.metrics["inference"]
         if self.is_train:
             metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
         outputs = self.model(**batch)
         batch.update(outputs)
-        batch = self.transform_batch(batch, self.reconstruct_transforms)
+        batch.update(self.reconstruct_wav(batch))
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
@@ -92,6 +90,14 @@ class Trainer(BaseTrainer):
             )
             self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
             self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
+            self.log_spectrogram(
+                batch["spectrogram_pred_first"],
+                spectrogram_name="spectrogram_pred_first",
+            )
+            self.log_spectrogram(
+                batch["spectrogram_pred_second"],
+                spectrogram_name="spectrogram_pred_second",
+            )
         else:
             # Log Stuff
             self.log_audio(batch["audio_first"], audio_name="audio_first")

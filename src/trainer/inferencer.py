@@ -120,41 +120,17 @@ class Inferencer(BaseTrainer):
         # and task pipeline
 
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(
-            batch, self.batch_transforms
-        )  # transform batch on device -- faster
-
+        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        batch.update(self.transform_batch(self.get_spectrogram(batch)))
         outputs = self.model(**batch)
         batch.update(outputs)
-
+        batch.update(self.reconstruct_wav(batch))
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
-
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
-
-        for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
-
-            output_id = current_id + i
-
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
-            if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
-
         return batch
 
     def _inference_part(self, part, dataloader):

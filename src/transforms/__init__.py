@@ -1,1 +1,2 @@
-from src.transforms.spec_utils import GetSpectrogram, Reconstruct
+from src.transforms.fft_transform import TransformFFT
+from src.transforms.mel_transform import TransformMel

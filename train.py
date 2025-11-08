@@ -45,9 +45,7 @@ def main(config):
 
     # setup data_loader instances
     # batch_transforms should be put on device
-    dataloaders, batch_transforms, reconstruct_transforms = get_dataloaders(
-        config, device
-    )
+    dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
@@ -84,7 +82,6 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
-        reconstruct_transforms=reconstruct_transforms,
     )
 
     trainer.train()

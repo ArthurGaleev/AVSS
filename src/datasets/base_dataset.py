@@ -115,9 +115,11 @@ class BaseDataset(Dataset):
                     or transform_name not in instance_data
                 ):
                     continue  # skip special key
-                instance_data[transform_name] = self.instance_transforms[
-                    transform_name
-                ](instance_data[transform_name])
+                for key in instance_data:
+                    if key.startswith(transform_name):
+                        instance_data[key] = self.instance_transforms[transform_name](
+                            instance_data[key]
+                        )
         return instance_data
 
     @staticmethod

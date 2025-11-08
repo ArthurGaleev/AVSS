@@ -1,16 +1,15 @@
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import pesq_func
+from src.metrics.utils import si_snr_func
 
 
-class Pesq(BaseMetric):
-    def __init__(self, sample_rate, compare="first", *args, **kwargs):
+class SiSnr(BaseMetric):
+    def __init__(self, compare="first", *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert compare in [
             "first",
             "second",
             "average",
         ], "You should compare only the first and the second wavs pred and initial"
-        self.sample_rate = sample_rate
         self.compare = compare
 
     def __call__(
@@ -22,7 +21,7 @@ class Pesq(BaseMetric):
         audio_pred_second = [
             audio_pred_second[i, ...] for i in range(audio_pred_second.shape[0])
         ]
-        pesqs = []
+        si_snr = []
         if self.compare == "first":
             ests, targets = audio_pred_first, audio_first
         elif self.compare == "second":
@@ -33,5 +32,5 @@ class Pesq(BaseMetric):
                 audio_first + audio_second,
             )
         for est, target in zip(ests, targets):
-            pesqs.append(pesq_func(self.sample_rate).to(est.device)(est, target))
-        return sum(pesqs) / len(pesqs)
+            si_snr.append(si_snr_func().to(est.device)(est, target))
+        return sum(si_snr) / len(si_snr)

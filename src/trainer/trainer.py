@@ -32,18 +32,17 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(
-            batch, self.batch_transforms
-        )  # transform batch on device -- faster
-
-        if self.is_train and zero_grad:
+        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        batch.update(self.transform_batch(self.get_spectrogram(batch)))
+        metric_funcs = self.metrics["inference"]
+        if self.is_train:
+            metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
-        with self.autocast_context:
-            outputs = self.model(**batch)
-            batch.update(outputs)
-            # batch = self.transform_batch(batch, self.reconstruct_transforms)
-            all_losses = self.criterion(**batch)
-            batch.update(all_losses)
+        outputs = self.model(**batch)
+        batch.update(outputs)
+        batch.update(self.reconstruct_wav(batch))
+        all_losses = self.criterion(**batch)
+        batch.update(all_losses)
 
         if self.is_train:
             self.autocast_grad_scaler.scale(
@@ -82,14 +81,42 @@ class Trainer(BaseTrainer):
         # such as audio or images, for example
 
         # logging scheme might be different for different partitions
-        # if mode == "train":  # the method is called only every self.log_step steps
-        #     self.log_spectrogram(**batch)
-        # else:
-        #     # Log Stuff
-        #     self.log_spectrogram(**batch)
-        #     self.log_predictions(**batch)
+        if mode == "train":  # the method is called only every self.log_step steps
+            self.log_audio(batch["audio_first"], audio_name="audio_first")
+            self.log_audio(batch["audio_second"], audio_name="audio_second")
+            self.log_audio(batch["audio_mix"], audio_name="audio_mix")
+            self.log_spectrogram(
+                batch["spectrogram_first"], spectrogram_name="spectrogram_first"
+            )
+            self.log_spectrogram(
+                batch["spectrogram_second"], spectrogram_name="spectrogram_second"
+            )
+            self.log_spectrogram(
+                batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
+            )
+            self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
+            self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
+            self.log_spectrogram(
+                batch["spectrogram_pred_first"],
+                spectrogram_name="spectrogram_pred_first",
+            )
+            self.log_spectrogram(
+                batch["spectrogram_pred_second"],
+                spectrogram_name="spectrogram_pred_second",
+            )
+        else:
+            # Log Stuff
+            self.log_audio(batch["audio_first"], audio_name="audio_first")
+            self.log_audio(batch["audio_second"], audio_name="audio_second")
+            self.log_audio(batch["audio_mix"], audio_name="audio_mix")
+            self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
+            self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
 
-    def log_spectrogram(self, spectrogram, **batch):
+    def log_spectrogram(self, spectrogram, spectrogram_name="spectrogram"):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
-        image = plot_spectrogram(spectrogram_for_plot)
-        self.writer.add_image("spectrogram", image)
+        image = plot_spectrogram(spectrogram_for_plot, self.config)
+        self.writer.add_image(spectrogram_name, image)
+
+    def log_audio(self, audio, audio_name="audio"):
+        audio = audio[0].detach().cpu()
+        self.writer.add_audio(audio_name, audio, sample_rate=self.config.sample_rate)

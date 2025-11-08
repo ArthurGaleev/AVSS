@@ -1,5 +1,5 @@
 train:
-    # audio_mix: # name of the tensor on which we apply transform
+    # audio: #apply to all audio in instance_date
     #   _target_: torchvision.transforms.v2.Compose
     #   transforms:
     #     - _target_: src.transforms.wav_augs.Gain

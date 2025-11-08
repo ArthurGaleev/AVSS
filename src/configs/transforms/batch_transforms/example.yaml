@@ -1,20 +1,19 @@
 train:
-  get_spectrogram: # special key for getting spectrogram
-    _target_: src.transforms.GetSpectrogram
-    n_fft: 1000
-    hop_len: 250
-    window_len: 1000
-    n_mels: 80
-    sample_rate: ${trainer.sample_rate}
+  transfrom_spec_wav: # special key for getting spectrogram
+    _target_: src.transforms.TransformFFT
+    n_fft: 640
+    hop_len: 160
+    window_len: 640
+    # n_mels: 80
+    # sample_rate: ${sample_rate}
     power: 2
-    mode: "mel"
 inference:
-  get_spectrogram: # special key for getting spectrogram
-    _target_: src.transforms.GetSpectrogram
-    n_fft: ${transforms.batch_transforms.train.get_spectrogram.n_fft}
-    window_len: ${transforms.batch_transforms.train.get_spectrogram.window_len}
-    hop_len: ${transforms.batch_transforms.train.get_spectrogram.hop_len}
-    n_mels: ${transforms.batch_transforms.train.get_spectrogram.n_mels}
-    sample_rate: ${trainer.sample_rate}
-    power: ${transforms.batch_transforms.train.get_spectrogram.power}
-    mode: ${transforms.batch_transforms.train.get_spectrogram.mode}
+  transfrom_spec_wav: # special key for getting spectrogram
+    _target_: src.transforms.TransformFFT
+    n_fft: 640
+    hop_len: 160
+    window_len: 640
+    # n_mels: 80
+    # sample_rate: ${sample_rate}
+    power: 2
+#change in model.baseline n_feats to n_fft//2+1 when using TransformFFt and to n_mels whrn using TransformMel

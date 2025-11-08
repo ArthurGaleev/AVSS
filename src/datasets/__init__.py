@@ -1,1 +1,3 @@
-from src.datasets.custom_dir_audio_dataset import CustomDirAudioDataset, YandexDownload
+from src.datasets.custom_dir_audio_dataset import CustomDirAudioDataset
+from src.datasets.kaggle_download import KaggleDownload
+from src.datasets.yandex_download import YandexDownload

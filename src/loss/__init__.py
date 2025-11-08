@@ -1,2 +1,3 @@
-from src.loss.AudioMSELoss import AudioMSELoss
+from src.loss.AudioMSELoss import AudioMseLoss
+from src.loss.AudioSiSnr import AudioSiSnr
 from src.loss.SpectrogramLoss import SpectrogramLoss

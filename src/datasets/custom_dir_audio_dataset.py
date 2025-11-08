@@ -3,6 +3,7 @@ from pathlib import Path
 import torchaudio
 
 from src.datasets.base_dataset import BaseDataset
+from tqdm.auto import tqdm
 
 
 class CustomDirAudioDataset(BaseDataset):
@@ -15,18 +16,7 @@ class CustomDirAudioDataset(BaseDataset):
         **kwargs,
     ):
         data = []
-        # audio_first_IDS=set([path.stem for path in Path(audio_first_dir).iterdir()])
-        # audio_second_IDS=set([path.stem for path in Path(audio_second_dir).iterdir()])
-        for path in Path(audio_mix_dir).iterdir():
-            # ID1, ID2=path.stem.split("_")
-            # if(ID1 not in audio_first_IDS or ID2 not in audio_second_IDS):
-            #     continue
-            # entry = {}
-            # if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
-            #     entry["audio_path_mix"] = str(path)
-            #     entry["audio_path_first"] = str(audio_first_dir/(ID1+path.suffix))
-            #     entry["audio_path_second"] = str(audio_second_dir/(ID2+path.suffix))
-            # Need to uncomment for big dataset for now use the dataset we created
+        for path in tqdm(list(Path(audio_mix_dir).iterdir()), desc="Creating dataset"):
             entry = {}
             if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
                 entry["audio_path_mix"] = str(path)

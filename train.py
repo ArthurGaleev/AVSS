@@ -49,6 +49,8 @@ def main(config):
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
     logger.info(model)
 
     # get function handles of loss and metrics

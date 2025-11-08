@@ -76,7 +76,6 @@ class Reconstruct(torch.nn.Module):
             self.reconstruct = torch.nn.Identity()
         self.power = power
         self.mode = "mel"
-        self.n_fft = n_fft
         self.istft_kwargs = {
             "n_fft": n_fft,
             "win_length": window_len,
@@ -90,7 +89,7 @@ class Reconstruct(torch.nn.Module):
         if phase is None:
             return spec
         spec = spec * torch.exp(1j * phase)
-        window = torch.hann_window(self.n_fft)
+        window = torch.hann_window(self.istft_kwargs["n_fft"])
         return torch.istft(
             spec,
             window=window.to(spec.device),

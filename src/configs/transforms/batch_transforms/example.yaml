@@ -1,9 +1,9 @@
 train:
   get_spectrogram: # special key for getting spectrogram
     _target_: src.transforms.GetSpectrogram
-    n_fft: 1000
-    hop_len: 250
-    window_len: 1000
+    n_fft: 640
+    hop_len: 160
+    window_len: 640
     n_mels: 80
     sample_rate: ${trainer.sample_rate}
     power: 2

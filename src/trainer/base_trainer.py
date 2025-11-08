@@ -367,7 +367,6 @@ class BaseTrainer:
         """
         # do batch transforms on device
         transform_type = "train" if self.is_train else "inference"
-        assert transform_type in transforms
         transforms = transforms.get(transform_type)
         if transforms is not None:
             for transform_name in transforms.keys():

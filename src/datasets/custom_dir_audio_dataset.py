@@ -1,4 +1,5 @@
 import io
+import os
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +14,12 @@ from src.utils.io_utils import ROOT_PATH
 
 class CustomDirAudioDataset(BaseDataset):
     def __init__(
-        self, audio_mix_dir, audio_first_dir, audio_second_dir, *args, **kwargs
+        self,
+        audio_mix_dir,
+        audio_first_dir=None,
+        audio_second_dir=None,
+        *args,
+        **kwargs,
     ):
         data = []
         # audio_first_IDS=set([path.stem for path in Path(audio_first_dir).iterdir()])
@@ -31,15 +37,17 @@ class CustomDirAudioDataset(BaseDataset):
             entry = {}
             if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
                 entry["audio_path_mix"] = str(path)
-                entry["audio_path_first"] = str(audio_first_dir / path.name)
-                entry["audio_path_second"] = str(audio_second_dir / path.name)
+                if audio_first_dir is not None and audio_second_dir is not None:
+                    entry["audio_path_first"] = str(audio_first_dir / path.name)
+                    entry["audio_path_second"] = str(audio_second_dir / path.name)
                 t_info = torchaudio.info(str(path))
                 mix_length = t_info.num_frames / t_info.sample_rate
-                t_info = torchaudio.info(str(audio_first_dir / path.name))
-                first_length = t_info.num_frames / t_info.sample_rate
-                t_info = torchaudio.info(str(audio_second_dir / path.name))
-                second_length = t_info.num_frames / t_info.sample_rate
-                assert mix_length == first_length == second_length
+                if audio_first_dir is not None:
+                    t_info = torchaudio.info(str(audio_first_dir / path.name))
+                    first_length = t_info.num_frames / t_info.sample_rate
+                    t_info = torchaudio.info(str(audio_second_dir / path.name))
+                    second_length = t_info.num_frames / t_info.sample_rate
+                    assert mix_length == first_length == second_length
                 entry["audio_len"] = mix_length
             if len(entry) > 0:
                 data.append(entry)
@@ -49,7 +57,7 @@ class CustomDirAudioDataset(BaseDataset):
 YANDEX_URL = {
     "dla_dataset_small_a": {
         "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
-        "public_key": "https://disk.360.yandex.ru/d/R99_Q19X6ztnVw",
+        "public_key": os.getenv("YANDEX_DISK_URL"),
     }
 }
 
@@ -61,7 +69,7 @@ class YandexDownload(CustomDirAudioDataset):
         data_dir=None,
         part="train",
         *args,
-        **kwargs
+        **kwargs,
     ):
         assert download_name in YANDEX_URL
         if data_dir is None:

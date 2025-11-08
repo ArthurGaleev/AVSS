@@ -56,7 +56,7 @@ def plot_spectrogram(spectrogram, config):
     fig, ax = plt.subplots(figsize=(26, 7))
     mel_spec_config = config.transforms.batch_transforms.train.transfrom_spec_wav
     hop_length = mel_spec_config["hop_len"]
-    sample_rate = config.trainer.sample_rate
+    sample_rate = config.sample_rate
     tGrid = np.arange(0, spectrogram.shape[1]) * hop_length / sample_rate
     if "n_mels" in mel_spec_config:
         n_mels = mel_spec_config["n_mels"]

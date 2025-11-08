@@ -5,7 +5,7 @@ train:
     hop_len: 160
     window_len: 640
     # n_mels: 80
-    # sample_rate: ${trainer.sample_rate}
+    # sample_rate: ${sample_rate}
     power: 2
 inference:
   transfrom_spec_wav: # special key for getting spectrogram
@@ -14,6 +14,6 @@ inference:
     hop_len: 160
     window_len: 640
     # n_mels: 80
-    # sample_rate: ${trainer.sample_rate}
+    # sample_rate: ${sample_rate}
     power: 2
 #change in model.baseline n_feats to n_fft//2+1 when using TransformFFt and to n_mels whrn using TransformMel

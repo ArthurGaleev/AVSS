@@ -16,8 +16,8 @@ inference: # metrics that are calculated during inference (eval)
   - _target_: src.metrics.Pesq
     name: "Pesq"
     compare: "average"
-    sample_rate: ${trainer.sample_rate}
+    sample_rate: ${sample_rate}
   - _target_: src.metrics.Stoi
     name: "Stoi"
     compare: "average"
-    sample_rate: ${trainer.sample_rate}
+    sample_rate: ${sample_rate}

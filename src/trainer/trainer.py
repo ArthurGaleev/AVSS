@@ -113,6 +113,4 @@ class Trainer(BaseTrainer):
 
     def log_audio(self, audio, audio_name="audio"):
         audio = audio[0].detach().cpu()
-        self.writer.add_audio(
-            audio_name, audio, sample_rate=self.config.trainer.sample_rate
-        )
+        self.writer.add_audio(audio_name, audio, sample_rate=self.config.sample_rate)

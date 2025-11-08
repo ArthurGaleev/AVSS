@@ -35,5 +35,5 @@ class TransformFFT(torch.nn.Module):
         if self.power is not None:
             spec = spec ** (1 / self.power)
         if phase is not None:
-            return self.reconstruct(torch.complex(spec, phase))
-        return self.reconstruct(spec.to(torch.complex64))
+            spec = spec * torch.exp(1j * phase)
+        return self.reconstruct(spec)

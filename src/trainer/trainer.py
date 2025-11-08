@@ -34,9 +34,7 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
         batch.update(self.transform_batch(self.get_spectrogram(batch)))
-        metric_funcs = self.metrics["inference"]
         if self.is_train:
-            metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
         outputs = self.model(**batch)
         batch.update(outputs)
@@ -85,25 +83,25 @@ class Trainer(BaseTrainer):
             self.log_audio(batch["audio_first"], audio_name="audio_first")
             self.log_audio(batch["audio_second"], audio_name="audio_second")
             self.log_audio(batch["audio_mix"], audio_name="audio_mix")
-            self.log_spectrogram(
-                batch["spectrogram_first"], spectrogram_name="spectrogram_first"
-            )
-            self.log_spectrogram(
-                batch["spectrogram_second"], spectrogram_name="spectrogram_second"
-            )
-            self.log_spectrogram(
-                batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
-            )
+            # self.log_spectrogram(
+            #     batch["spectrogram_first"], spectrogram_name="spectrogram_first"
+            # )
+            # self.log_spectrogram(
+            #     batch["spectrogram_second"], spectrogram_name="spectrogram_second"
+            # )
+            # self.log_spectrogram(
+            #     batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
+            # )
             self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
             self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
-            self.log_spectrogram(
-                batch["spectrogram_pred_first"],
-                spectrogram_name="spectrogram_pred_first",
-            )
-            self.log_spectrogram(
-                batch["spectrogram_pred_second"],
-                spectrogram_name="spectrogram_pred_second",
-            )
+            # self.log_spectrogram(
+            #     batch["spectrogram_pred_first"],
+            #     spectrogram_name="spectrogram_pred_first",
+            # )
+            # self.log_spectrogram(
+            #     batch["spectrogram_pred_second"],
+            #     spectrogram_name="spectrogram_pred_second",
+            # )
         else:
             # Log Stuff
             self.log_audio(batch["audio_first"], audio_name="audio_first")

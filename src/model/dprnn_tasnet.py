@@ -34,6 +34,9 @@ class Encoder(nn.Module):
             in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=1
         )
 
+        # self.linear = nn.Linear(input_dim, hidden_dim)
+        # self.sigmoid = nn.Sigmoid()
+
     def forward(self, audio_mix):
         x = self.dconv1d_block(
             audio_mix.unsqueeze(1)
@@ -41,6 +44,9 @@ class Encoder(nn.Module):
 
         residual = self.res_conv(x)
         x = self.out_conv(x) + audio_mix.unsqueeze(1)
+
+        # x = self.linear(audio_mix)
+        # x = self.sigmoid()
 
         return residual, x
 

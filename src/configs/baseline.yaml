@@ -17,7 +17,7 @@ lr_scheduler:
   epochs: ${trainer.n_epochs}
   anneal_strategy: cos
 loss_function:
-  _target_: src.loss.AudioMseLoss
+  _target_: src.loss.SpectrogramLoss
 sample_rate: 16000
 trainer:
   log_step: 50

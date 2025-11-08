@@ -25,7 +25,6 @@ class YandexDownload(CustomDirAudioDataset):
         *args,
         **kwargs,
     ):
-        assert download_name in YANDEX_URL
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets"
         if not (data_dir / download_name / "audio" / part).exists():

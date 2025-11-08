@@ -3,6 +3,7 @@ import math
 import torch
 
 from src.metrics.base_metric import BaseMetric
+from src.metrics.utils import sdr_func
 
 MAX_SI_SDR = 50
 
@@ -10,10 +11,11 @@ MAX_SI_SDR = 50
 class SiSdr(BaseMetric):
     def __init__(self, compare="first", *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if compare != "first" and compare != "second" and compare != "average":
-            raise NotImplementedError(
-                "You should compare only the first and the second wavs pred and initial"
-            )
+        assert compare in [
+            "first",
+            "second",
+            "average",
+        ], "You should compare only the first and the second wavs pred and initial"
         self.compare = compare
 
     def __call__(
@@ -36,17 +38,5 @@ class SiSdr(BaseMetric):
                 audio_first + audio_second,
             )
         for est, target in zip(ests, targets):
-            alpha = torch.sum(target * est) / torch.sum(target**2)
-            sisdrs.append(
-                (
-                    10
-                    * (
-                        2 * torch.log10(alpha)
-                        + torch.log10(torch.sum(target**2))
-                        - torch.log10(torch.sum((est - alpha * target) ** 2))
-                    )
-                ).item()
-            )
-        # TODO fix nan problem
-        sisdrs = [x for x in sisdrs if not math.isnan(x)]
+            sisdrs.append(sdr_func().to(est.device)(est, target))
         return sum(sisdrs) / len(sisdrs)

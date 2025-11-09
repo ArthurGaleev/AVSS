@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import torchaudio
+from tqdm.auto import tqdm
 
 from src.datasets.base_dataset import BaseDataset
 from tqdm.auto import tqdm

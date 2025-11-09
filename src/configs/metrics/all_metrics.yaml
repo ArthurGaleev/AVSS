@@ -1,14 +1,14 @@
 train: [] # metrics that are calculated during training
 inference: # metrics that are calculated during inference (eval)
-  # - _target_: src.metrics.SiSnr
+  # - _target_: src.metrics.SiSnri
   #   name: "SiSnr_first"
   #   compare: "first"
-  # - _target_: src.metrics.SiSnr
+  # - _target_: src.metrics.SiSnri
   #   name: "SiSnr_second"
   #   compare: "second"
   #compare results for first and second wav
-  - _target_: src.metrics.SiSnr
-    name: "SiSnr"
+  - _target_: src.metrics.SiSnri
+    name: "SiSnri"
     compare: "average"
   - _target_: src.metrics.SiSdr
     name: "SiSdr"

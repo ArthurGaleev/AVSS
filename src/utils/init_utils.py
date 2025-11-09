@@ -169,6 +169,7 @@ def select_most_suitable_gpu():
         best_gpu (str): device string of the most suitable GPU.
         free_memories (list): list of free memory for each GPU.
     """
+    torch.cuda.empty_cache()
 
     # Find most free GPU
     num_gpus = torch.cuda.device_count()
@@ -178,6 +179,7 @@ def select_most_suitable_gpu():
     for i in range(num_gpus):
         info = torch.cuda.mem_get_info(i)
         free_memories.append(info[0])
+
     best_gpu = free_memories.index(max(free_memories))
 
     return f"cuda:{best_gpu}", max(free_memories)

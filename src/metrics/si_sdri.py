@@ -9,7 +9,7 @@ from src.metrics.utils import sdri_func
 MAX_SI_SDR = 50
 
 
-class SiSdr(BaseMetric):
+class SiSdri(BaseMetric):
     def __init__(self, compare="first", *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert compare in [

@@ -179,15 +179,16 @@ class DPRNNBlock(nn.Module):
 
         # because inter_rnn is applied across the chunks
         x = x.view(batch_size, n_chunks, chunk_size, n_features)
-<<<<<<< HEAD
-        x = x.permute(0, 2, 1, 3).contiguous().view(batch_size * chunk_size, n_chunks, n_features)
-=======
         x = (
             x.permute(0, 2, 1, 3)
             .contiguous()
             .view(batch_size * chunk_size, n_chunks, n_features)
         )
->>>>>>> 34a313a (Changed permute in  Lstm)
+        x = (
+            x.permute(0, 2, 1, 3)
+            .contiguous()
+            .view(batch_size * chunk_size, n_chunks, n_features)
+        )
         x = self.inter_norm(self.inter_fc(self.inter_rnn(x)[0])) + x
 
         # reshape back

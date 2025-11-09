@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import torchaudio
+from tqdm.auto import tqdm
 
 from src.datasets.base_dataset import BaseDataset
 
@@ -15,7 +16,7 @@ class CustomDirAudioDataset(BaseDataset):
         **kwargs,
     ):
         data = []
-        for path in Path(audio_mix_dir).iterdir():
+        for path in tqdm(list(Path(audio_mix_dir).iterdir()), desc="Creating dataset"):
             entry = {}
             if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
                 entry["audio_path_mix"] = str(path)

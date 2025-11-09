@@ -14,12 +14,28 @@ def pesq_func(sample_rate):
     return PerceptualEvaluationSpeechQuality(sample_rate, "wb")
 
 
-def si_snr_func():
-    return ScaleInvariantSignalNoiseRatio()
+class ScaleInvariantSignalNoiseRatioImprovement(ScaleInvariantSignalNoiseRatio):
+    def forward(self, preds, target, mixture):
+        si_snr_est = super().forward(preds, target)
+        si_snr_mix = super().forward(mixture, target)
+        return si_snr_est - si_snr_mix
 
 
-def sdr_func():
-    return ScaleInvariantSignalDistortionRatio()
+def si_snri_func():
+    return ScaleInvariantSignalNoiseRatioImprovement()
+
+
+class ScaleInvariantSignalDistortionRatioImprovement(
+    ScaleInvariantSignalDistortionRatio
+):
+    def forward(self, preds, target, mixture):
+        si_sdr_est = super().forward(preds, target)
+        si_sdr_mix = super().forward(mixture, target)
+        return si_sdr_est - si_sdr_mix
+
+
+def sdri_func():
+    return ScaleInvariantSignalDistortionRatioImprovement()
 
 
 def stoi_func(sample_rate):

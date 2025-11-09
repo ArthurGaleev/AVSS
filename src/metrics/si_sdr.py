@@ -1,9 +1,10 @@
 import math
+from copy import deepcopy
 
 import torch
 
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import sdr_func
+from src.metrics.utils import sdri_func
 
 MAX_SI_SDR = 50
 
@@ -19,7 +20,13 @@ class SiSdr(BaseMetric):
         self.compare = compare
 
     def __call__(
-        self, audio_pred_first, audio_first, audio_pred_second, audio_second, **batch
+        self,
+        audio_pred_first,
+        audio_first,
+        audio_pred_second,
+        audio_second,
+        audio_mix,
+        **batch,
     ):
         audio_pred_first = [
             audio_pred_first[i, ...] for i in range(audio_pred_first.shape[0])
@@ -27,16 +34,18 @@ class SiSdr(BaseMetric):
         audio_pred_second = [
             audio_pred_second[i, ...] for i in range(audio_pred_second.shape[0])
         ]
-        sisdrs = []
+        audio_mix = [audio_mix[i, ...] for i in range(audio_mix.shape[0])]
+        sdri = []
         if self.compare == "first":
-            ests, targets = audio_pred_first, audio_first
+            ests, targets, mixes = audio_pred_first, audio_first, audio_mix
         elif self.compare == "second":
-            ests, targets = audio_pred_second, audio_second
+            ests, targets, mixes = audio_pred_second, audio_second, audio_mix
         else:
-            ests, targets = (
+            ests, targets, mixes = (
                 audio_pred_first + audio_pred_second,
                 audio_first + audio_second,
+                deepcopy(audio_mix) + deepcopy(audio_mix),
             )
-        for est, target in zip(ests, targets):
-            sisdrs.append(sdr_func().to(est.device)(est, target))
-        return sum(sisdrs) / len(sisdrs)
+        for est, target, mix in zip(ests, targets, mixes):
+            sdri.append(sdri_func().to(est.device)(est, target, mix))
+        return sum(sdri) / len(sdri)

@@ -35,7 +35,9 @@ class YandexDownload(CustomDirAudioDataset):
             )
             response = requests.get(final_url)
             download_url = response.json()["href"]
+            print("Downloading zip data...")
             download_response = requests.get(download_url)
+            print("Successfully downloaded")
             zip = zipfile.ZipFile(io.BytesIO(download_response.content))
             zip.extractall(data_dir)
         data_dir = data_dir / download_name / "audio" / part

@@ -1,0 +1,11 @@
+train:
+  _target_: src.datasets.YandexDownload
+  instance_transforms: ${transforms.instance_transforms.train}
+  download_name: "dla_dataset_small_av"
+  part: "train"
+val:
+  _target_: src.datasets.YandexDownload
+  instance_transforms: ${transforms.instance_transforms.train}
+  download_name: "dla_dataset_small_av"
+  part: "val"
+  

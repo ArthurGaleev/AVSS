@@ -9,9 +9,17 @@ from src.datasets.custom_dir_audio_dataset import CustomDirAudioDataset
 from src.utils.io_utils import ROOT_PATH
 
 YANDEX_URL = {
-    "dla_dataset_small_a": {
+    "dla_dataset": {
         "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
         "public_key": os.getenv("YANDEX_DISK_URL"),
+    },
+    "dla_dataset_small_a": {
+        "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
+        "public_key": "https://disk.360.yandex.ru/d/R99_Q19X6ztnVw",
+    },
+    "dla_dataset_small_av": {
+        "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
+        "public_key": "https://disk.360.yandex.ru/d/5pz96ysIZi33IQ",
     }
 }
 
@@ -19,7 +27,7 @@ YANDEX_URL = {
 class YandexDownload(CustomDirAudioDataset):
     def __init__(
         self,
-        download_name="dla_dataset_small_a",
+        download_name="dla_dataset",
         data_dir=None,
         part="train",
         *args,

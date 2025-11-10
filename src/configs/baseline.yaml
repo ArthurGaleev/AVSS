@@ -2,7 +2,7 @@ defaults:
   - model: baseline
   - writer: wandb
   - metrics: all_metrics
-  - datasets: yandex_disk_small
+  - datasets: yandex_disk
   - dataloader: example
   - transforms: example
   - _self_

@@ -8,3 +8,4 @@ val:
   instance_transforms: ${transforms.instance_transforms.train}
   download_name: "dla_dataset_small_a"
   part: "val"
+  

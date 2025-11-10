@@ -5,9 +5,6 @@ from hydra.utils import instantiate
 from src.datasets.collate import collate_fn
 from src.utils.init_utils import set_worker_seed
 
-from torch.utils.data.distributed import DistributedSampler
-from torch.distributed import get_world_size
-
 
 def inf_loop(dataloader):
     """
@@ -77,21 +74,13 @@ def get_dataloaders(config, device):
             f"be larger than the dataset length ({len(dataset)})"
         )
 
-        if dataset_partition == "train" and config.trainer.distributed:
-            assert config.dataloader.train_dataloader.batch_size % get_world_size() == 0
-            config.dataloader.train_dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
-            sampler = DistributedSampler(dataset)
-        else:
-            sampler = None
-
         partition_dataloader = instantiate(
             config=config.dataloader[f"{dataset_partition}_dataloader"],
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),
-            # do not need shuffle, because of sampler
+            shuffle=(dataset_partition == "train"),
             worker_init_fn=set_worker_seed,
-            sampler=sampler,
         )
         dataloaders[dataset_partition] = partition_dataloader
 

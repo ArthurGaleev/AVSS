@@ -35,6 +35,5 @@ trainer:
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   save_dir: "saved"
   dir_created: False
+  parallel: False
   seed: 1
-  distributed: False
-  parallel: True

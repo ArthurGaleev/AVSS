@@ -51,7 +51,6 @@ def main(config):
         if config.trainer.distributed:
             init_process()
             local_rank = torch.distributed.get_rank()
-            torch.cuda.set_device(f"cuda:{local_rank}")
             device = f"cuda:{local_rank}"
             if local_rank != 0:
                 torch.distributed.barrier()

@@ -44,6 +44,8 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
+    if config.trainer.distributed:
+        init_process()
 
     set_random_seed(
         config.trainer.seed, config.trainer.get("save_reproducibility", True)
@@ -54,13 +56,11 @@ def main(config):
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
 
-
     device = config.trainer.device
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         if config.trainer.distributed:
-            init_process()
             device = f"cuda:{torch.distributed.get_rank()}"
         else:
             device, free_memories = select_most_suitable_gpu()

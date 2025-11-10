@@ -266,6 +266,8 @@ class BaseTrainer:
             val_logs = self._evaluation_epoch(epoch, part, dataloader)
             logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
 
+        torch.distributed.barrier()
+
         return logs
 
     def _evaluation_epoch(self, epoch, part, dataloader):

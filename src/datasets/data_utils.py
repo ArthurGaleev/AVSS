@@ -77,7 +77,7 @@ def get_dataloaders(config, device):
             f"be larger than the dataset length ({len(dataset)})"
         )
 
-        if config.trainer.distributed:
+        if dataset_partition == "train" and config.trainer.distributed:
             assert config.dataloader.train_dataloader.batch_size % get_world_size() == 0
             config.dataloader.train_dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
             sampler = DistributedSampler(dataset)

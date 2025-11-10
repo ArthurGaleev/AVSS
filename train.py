@@ -61,7 +61,7 @@ def main(config):
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         if config.trainer.distributed:
-            device = f"cuda:{torch.distributed.get_rank()}"
+            device = f"cuda:{int(os.environ["RANK"])}"
         else:
             device, free_memories = select_most_suitable_gpu()
             logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")

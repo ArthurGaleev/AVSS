@@ -65,6 +65,7 @@ def main(config):
     if device == "cuda":
         if config.trainer.distributed:
             device = f"cuda:{torch.distributed.get_rank()}"
+            logger.info(f"Using GPU: {device}")
         else:
             device, free_memories = select_most_suitable_gpu()
             logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
@@ -75,9 +76,9 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model)
+    model = instantiate(config.model).to(device)
     if config.trainer.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model.to("cuda"))
+        model = torch.nn.parallel.DistributedDataParallel(model)
     elif config.trainer.parallel:
         model = torch.nn.DataParallel(model)
     else:

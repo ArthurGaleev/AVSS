@@ -119,7 +119,7 @@ def saving_init(save_dir, config):
         elif config.trainer.override:
             print(f"Overriding save directory '{save_dir}'...")
             shutil.rmtree(str(save_dir))
-        elif config.trainer.distributed and config["dir_created"]:
+        elif config.trainer.distributed and config.trainer.dir_created:
             pass
         elif not config.trainer.override:
             raise ValueError(
@@ -127,7 +127,7 @@ def saving_init(save_dir, config):
             )
 
     save_dir.mkdir(exist_ok=True, parents=True)
-    config["dir_created"] = True
+    config.trainer.dir_created = True
 
     if run_id is None:
         run_id = generate_id(length=config.writer.id_length)

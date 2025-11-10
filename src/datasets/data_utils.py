@@ -88,6 +88,7 @@ def get_dataloaders(config, device):
             sampler = None
 
         partition_dataloader = instantiate(
+            config=config.dataset,
             batch_size=batch_size,
             dataset=dataset,
             collate_fn=collate_fn,

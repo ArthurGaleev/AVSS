@@ -30,3 +30,4 @@ trainer:
   accumulation_steps: 1
   save_dir: "saved"
   seed: 1
+  distributed: True

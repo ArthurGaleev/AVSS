@@ -4,6 +4,8 @@ import hydra
 import torch
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
+import os
+
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
@@ -15,6 +17,21 @@ from src.utils.init_utils import (
 from src.utils.torch_utils import set_tf32_allowance
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
+
+def init_process(backend='nccl'):
+    "Init the distributed env"
+    world_size = int(os.environ["WORLD_SIZE"])
+    current_rank = int(os.environ["RANK"])
+    if "MASTER_ADDR" not in os.environ:
+        os.environ["MASTER_ADDR"] = '127.0.0.1'
+    if "MASTER_PORT" not in os.environ:
+        os.environ["MASTER_PORT"] = '29500'
+    print("MASTER_ADDR: ", os.environ["MASTER_ADDR"])
+    print("MASTER_PORT: ", os.environ["MASTER_PORT"])
+    print("Starting init process group. Current rank: ", current_rank)
+    torch.distributed.init_process_group(backend, rank=current_rank, world_size=world_size)
+    print("Finished init process group. Current rank: ", current_rank)
 
 
 @hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
@@ -42,6 +59,9 @@ def main(config):
     if device == "cuda":
         device, free_memories = select_most_suitable_gpu()
         logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
+        if config.trainer.distributed:
+            init_process()
+            
 
     # setup data_loader instances
     # batch_transforms should be put on device
@@ -49,8 +69,8 @@ def main(config):
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
-    if torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model)
+    if config.trainer.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=torch.distributed.get_rank())
     logger.info(model)
 
     # get function handles of loss and metrics

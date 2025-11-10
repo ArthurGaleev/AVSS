@@ -77,21 +77,26 @@ def get_dataloaders(config, device):
             f"be larger than the dataset length ({len(dataset)})"
         )
 
-        if config.trainer.distributed and dataset_partition == "train":
-            sampler = DistributedSampler(dataset)
-            assert config.dataloader.batch_size // get_world_size()
-            config.dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
+        if dataset_partition == "train":
+            batch_size = config.dataloader.batch_size
+            if config.trainer.distributed:
+                sampler = DistributedSampler(dataset)
+                assert batch_size // get_world_size() == 0
+                batch_size //= get_world_size() # mini-batch on each device in distributed training
         else:
+            batch_size = config.dataloader.test_batch_size
             sampler = None
 
         partition_dataloader = instantiate(
-            config.dataloader,
+            batch_size=batch_size,
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),
             # do not need shuffle, because of sampler
             worker_init_fn=set_worker_seed,
-            sampler=sampler
+            sampler=sampler,
+            num_workers=config.dataloader.num_workers,
+            pin_memory=config.dataloader.pin_memory,
         )
         dataloaders[dataset_partition] = partition_dataloader
 

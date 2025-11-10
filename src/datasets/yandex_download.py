@@ -23,7 +23,7 @@ YANDEX_URL = {
     },
     "dla_dataset_onebatch_a": {
         "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
-        "public_key": "https://disk.360.yandex.ru/d/NFPe8zivc2nvLA",
+        "public_key": "https://disk.360.yandex.ru/d/jGFNXF12HBLRKQ",
     },
 }
 

@@ -15,6 +15,7 @@ lr_scheduler:
   gamma: 0.98
 loss_function:
   _target_: src.loss.AudioSiSnri
+download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2
 sample_rate: 16000

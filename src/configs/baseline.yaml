@@ -18,6 +18,7 @@ lr_scheduler:
   anneal_strategy: cos
 loss_function:
   _target_: src.loss.SpectrogramLoss
+download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2
 sample_rate: 16000

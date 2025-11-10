@@ -33,6 +33,9 @@ def init_process(backend='nccl'):
     torch.distributed.init_process_group(backend, rank=current_rank, world_size=world_size)
     print("Finished init process group. Current rank: ", current_rank)
 
+def cleanup():
+    torch.distributed.destroy_process_group()
+
 
 @hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
 def main(config):
@@ -61,7 +64,7 @@ def main(config):
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         if config.trainer.distributed:
-            device = f"cuda:{int(os.environ["RANK"])}"
+            device = torch.distributed.get_rank()
         else:
             device, free_memories = select_most_suitable_gpu()
             logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
@@ -114,6 +117,8 @@ def main(config):
 
     trainer.train()
 
+    if config.trainer.distributed:
+        cleanup()
 
 if __name__ == "__main__":
     main()

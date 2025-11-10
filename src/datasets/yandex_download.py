@@ -13,6 +13,18 @@ YANDEX_URL = {
         "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
         "public_key": os.getenv("YANDEX_DISK_URL"),
     },
+    "dla_dataset_small_a": {
+        "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
+        "public_key": os.getenv("YANDEX_DISK_URL"),
+    },
+    "dla_dataset_small_av": {
+        "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
+        "public_key": os.getenv("YANDEX_DISK_URL"),
+    },
+    "dla_dataset_onebatch_a": {
+        "base_url": "https://cloud-api.yandex.net/v1/disk/public/resources/download?",
+        "public_key": os.getenv("YANDEX_DISK_URL"),
+    },
 }
 
 

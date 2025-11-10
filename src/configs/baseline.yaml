@@ -36,3 +36,4 @@ trainer:
   save_dir: "saved"
   seed: 1
   distributed: False
+  parallel: True

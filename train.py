@@ -63,6 +63,7 @@ def main(config):
         else:
             device, free_memories = select_most_suitable_gpu()
             logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
+
         
             
 
@@ -74,6 +75,8 @@ def main(config):
     model = instantiate(config.model).to(device)
     if config.trainer.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model)
+    elif config.trainer.parallel:
+        model = torch.nn.DataParallel(model)
     logger.info(model)
 
     # get function handles of loss and metrics

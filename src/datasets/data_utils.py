@@ -77,6 +77,7 @@ def get_dataloaders(config, device):
             f"be larger than the dataset length ({len(dataset)})"
         )
 
+        sampler = None
         if dataset_partition == "train":
             if config.trainer.distributed:
                 assert config.dataloader.train_dataloader.batch_size % get_world_size() == 0
@@ -85,7 +86,6 @@ def get_dataloaders(config, device):
             config = config.dataloader.train_dataloader
         else:
             config = config.dataloader.test_dataloader
-            sampler = None
 
         partition_dataloader = instantiate(
             config=config,

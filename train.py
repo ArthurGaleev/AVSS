@@ -77,7 +77,7 @@ def main(config):
     # build model architecture, then print to console
     model = instantiate(config.model)
     if config.trainer.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model)
+        model = torch.nn.parallel.DistributedDataParallel(model.to("cuda"))
     elif config.trainer.parallel:
         model = torch.nn.DataParallel(model)
     else:

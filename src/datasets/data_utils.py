@@ -83,12 +83,12 @@ def get_dataloaders(config, device):
                 assert config.dataloader.train_dataloader.batch_size % get_world_size() == 0
                 config.dataloader.train_dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
                 sampler = DistributedSampler(dataset)
-            config = config.dataloader.train_dataloader
+            dataloader_config = config.dataloader.train_dataloader
         else:
-            config = config.dataloader.test_dataloader
+            dataloader_config = config.dataloader.test_dataloader
 
         partition_dataloader = instantiate(
-            config=config,
+            config=dataloader_config,
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),

@@ -119,7 +119,7 @@ def saving_init(save_dir, config):
         elif config.trainer.override:
             print(f"Overriding save directory '{save_dir}'...")
             shutil.rmtree(str(save_dir))
-        elif not config.trainer.override:
+        elif not config.trainer.override or (config.trainer.distributed and torch.distributed.get_rank() == 0):
             raise ValueError(
                 "Save directory exists. Change the name or set override=True"
             )

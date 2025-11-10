@@ -78,26 +78,23 @@ def get_dataloaders(config, device):
         )
 
         if dataset_partition == "train":
-            batch_size = config.dataloader.batch_size
             if config.trainer.distributed:
+                assert config.train_dataloader.batch_size % get_world_size() == 0
+                config.train_dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
                 sampler = DistributedSampler(dataset)
-                assert batch_size % get_world_size() == 0
-                batch_size //= get_world_size() # mini-batch on each device in distributed training
+            config = config.train_dataloader
         else:
-            batch_size = config.dataloader.test_batch_size
+            config = config.test_dataloader
             sampler = None
 
         partition_dataloader = instantiate(
-            config=config.dataloader,
-            batch_size=batch_size,
+            config=config,
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),
             # do not need shuffle, because of sampler
             worker_init_fn=set_worker_seed,
             sampler=sampler,
-            num_workers=config.dataloader.num_workers,
-            pin_memory=config.dataloader.pin_memory,
         )
         dataloaders[dataset_partition] = partition_dataloader
 

@@ -3,7 +3,8 @@ defaults:
   - writer: wandb
   - metrics: all_metrics
   - datasets: yandex_disk
-  - dataloader: example
+  - train_dataloader: train_dataloader
+  - test_dataloader: test_dataloader
   - transforms: example
   - _self_
 optimizer:
@@ -18,6 +19,8 @@ lr_scheduler:
   anneal_strategy: cos
 loss_function:
   _target_: src.loss.SpectrogramLoss
+batch_size: 4
+num_workers: 2
 sample_rate: 16000
 trainer:
   log_step: 50

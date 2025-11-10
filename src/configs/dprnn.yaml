@@ -3,7 +3,8 @@ defaults:
   - writer: wandb
   - metrics: all_metrics
   - datasets: yandex_disk
-  - dataloader: example
+  - train_dataloader: train_dataloader
+  - test_dataloader: test_dataloader
   - transforms: example_only_instance
   - _self_
 optimizer:
@@ -15,6 +16,8 @@ lr_scheduler:
   gamma: 0.98
 loss_function:
   _target_: src.loss.AudioSiSnri
+batch_size: 4
+num_workers: 2
 sample_rate: 16000
 trainer:
   log_step: 50

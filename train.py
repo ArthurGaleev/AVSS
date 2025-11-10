@@ -49,6 +49,7 @@ def main(config):
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         if config.trainer.distributed:
+            init_process()
             local_rank = torch.distributed.get_rank()
             torch.cuda.set_device(local_rank)
             device = f"cuda:{local_rank}"

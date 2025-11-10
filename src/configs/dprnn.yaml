@@ -3,7 +3,7 @@ defaults:
   - writer: wandb
   - metrics: all_metrics
   - datasets: yandex_disk
-  - dataloader: train_test_dataloader
+  - dataloader: train_test_dataloaders
   - transforms: example_only_instance
   - _self_
 optimizer:

@@ -57,10 +57,13 @@ def main(config):
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
-        device, free_memories = select_most_suitable_gpu()
-        logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
         if config.trainer.distributed:
             init_process()
+            device = f"cuda:{torch.distributed.get_rank()}"
+        else:
+            device, free_memories = select_most_suitable_gpu()
+            logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
+        
             
 
     # setup data_loader instances

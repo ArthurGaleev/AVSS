@@ -44,10 +44,20 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
-    if config.trainer.distributed:
-        init_process()
-        if torch.distributed.get_rank() != 0:
-            torch.distributed.barrier()
+    device = config.trainer.device
+    if device == "auto":
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda":
+        if config.trainer.distributed:
+            local_rank = torch.distributed.get_rank()
+            torch.cuda.set_device(local_rank)
+            device = f"cuda:{local_rank}"
+            if local_rank != 0:
+                torch.distributed.barrier()
+        else:
+            device, free_memories = select_most_suitable_gpu()
+            logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
+
 
     set_random_seed(
         config.trainer.seed, config.trainer.get("save_reproducibility", True)
@@ -58,19 +68,8 @@ def main(config):
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
 
-    device = config.trainer.device
-    if device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cuda":
-        if config.trainer.distributed:
-            if torch.distributed.get_rank() == 0:
-                torch.distributed.barrier()
-            device = f"cuda:{torch.distributed.get_rank()}"
-        else:
-            device, free_memories = select_most_suitable_gpu()
-            logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
-
-        
+    if config.trainer.distributed and torch.distributed.get_rank() == 0:
+        torch.distributed.barrier()
             
 
     # setup data_loader instances

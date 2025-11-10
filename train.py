@@ -46,6 +46,8 @@ def main(config):
     """
     if config.trainer.distributed:
         init_process()
+        if torch.distributed.get_rank() != 0:
+            torch.distributed.barrier()
 
     set_random_seed(
         config.trainer.seed, config.trainer.get("save_reproducibility", True)
@@ -61,6 +63,8 @@ def main(config):
         device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         if config.trainer.distributed:
+            if torch.distributed.get_rank() == 0:
+                torch.distributed.barrier()
             device = f"cuda:{torch.distributed.get_rank()}"
         else:
             device, free_memories = select_most_suitable_gpu()

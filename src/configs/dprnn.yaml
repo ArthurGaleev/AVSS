@@ -32,6 +32,7 @@ trainer:
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   accumulation_steps: 1
   save_dir: "saved"
+  dir_created: False
   seed: 1
   distributed: True
   parallel: True

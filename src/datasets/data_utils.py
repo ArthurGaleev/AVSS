@@ -79,12 +79,12 @@ def get_dataloaders(config, device):
 
         if dataset_partition == "train":
             if config.trainer.distributed:
-                assert config.train_dataloader.batch_size % get_world_size() == 0
-                config.train_dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
+                assert config.dataloader.train_dataloader.batch_size % get_world_size() == 0
+                config.dataloader.train_dataloader.batch_size //= get_world_size() # mini-batch on each device in distributed training
                 sampler = DistributedSampler(dataset)
-            config = config.train_dataloader
+            config = config.dataloader.train_dataloader
         else:
-            config = config.test_dataloader
+            config = config.dataloader.test_dataloader
             sampler = None
 
         partition_dataloader = instantiate(

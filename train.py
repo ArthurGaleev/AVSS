@@ -70,7 +70,7 @@ def main(config):
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     if config.trainer.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[torch.distributed.get_rank()])
+        model = torch.nn.parallel.DistributedDataParallel(model)
     logger.info(model)
 
     # get function handles of loss and metrics

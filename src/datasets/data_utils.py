@@ -81,7 +81,7 @@ def get_dataloaders(config, device):
             batch_size = config.dataloader.batch_size
             if config.trainer.distributed:
                 sampler = DistributedSampler(dataset)
-                assert batch_size // get_world_size() == 0
+                assert batch_size % get_world_size() == 0
                 batch_size //= get_world_size() # mini-batch on each device in distributed training
         else:
             batch_size = config.dataloader.test_batch_size

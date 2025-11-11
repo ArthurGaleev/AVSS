@@ -16,22 +16,15 @@ class Pesq(BaseMetric):
     def __call__(
         self, audio_pred_first, audio_first, audio_pred_second, audio_second, **batch
     ):
-        audio_pred_first = [
-            audio_pred_first[i, ...] for i in range(audio_pred_first.shape[0])
-        ]
-        audio_pred_second = [
-            audio_pred_second[i, ...] for i in range(audio_pred_second.shape[0])
-        ]
         pesqs = []
-        if self.compare == "first":
-            ests, targets = audio_pred_first, audio_first
-        elif self.compare == "second":
-            ests, targets = audio_pred_second, audio_second
-        else:
-            ests, targets = (
-                audio_pred_first + audio_pred_second,
-                audio_first + audio_second,
-            )
-        for est, target in zip(ests, targets):
-            pesqs.append(pesq_func(self.sample_rate).to(est.device)(est, target))
+        loss_func = pesq_func(self.sample_rate).to(audio_first.device)
+        for est_1, est_2, target_1, target_2 in zip(
+            audio_pred_first, audio_pred_second, audio_first, audio_second
+        ):
+            loss1 = (loss_func(est_1, target_1) + loss_func(est_2, target_2)) / 2
+            loss2 = (loss_func(est_1, target_2) + loss_func(est_2, target_1)) / 2
+            if loss1 < loss2:
+                pesqs.append(loss1)
+            else:
+                pesqs.append(loss2)
         return sum(pesqs) / len(pesqs)

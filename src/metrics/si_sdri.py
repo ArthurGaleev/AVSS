@@ -28,24 +28,19 @@ class SiSdri(BaseMetric):
         audio_mix,
         **batch,
     ):
-        audio_pred_first = [
-            audio_pred_first[i, ...] for i in range(audio_pred_first.shape[0])
-        ]
-        audio_pred_second = [
-            audio_pred_second[i, ...] for i in range(audio_pred_second.shape[0])
-        ]
-        audio_mix = [audio_mix[i, ...] for i in range(audio_mix.shape[0])]
         sdri = []
-        if self.compare == "first":
-            ests, targets, mixes = audio_pred_first, audio_first, audio_mix
-        elif self.compare == "second":
-            ests, targets, mixes = audio_pred_second, audio_second, audio_mix
-        else:
-            ests, targets, mixes = (
-                audio_pred_first + audio_pred_second,
-                audio_first + audio_second,
-                deepcopy(audio_mix) + deepcopy(audio_mix),
-            )
-        for est, target, mix in zip(ests, targets, mixes):
-            sdri.append(sdri_func().to(est.device)(est, target, mix))
+        loss_func = sdri_func().to(audio_pred_first.device)
+        for est_1, est_2, target_1, target_2, mix in zip(
+            audio_pred_first, audio_pred_second, audio_first, audio_second, audio_mix
+        ):
+            loss1 = (
+                loss_func(est_1, target_1, mix) + loss_func(est_2, target_2, mix)
+            ) / 2
+            loss2 = (
+                loss_func(est_1, target_2, mix) + loss_func(est_2, target_1, mix)
+            ) / 2
+            if loss1 < loss2:
+                sdri.append(loss1)
+            else:
+                sdri.append(loss2)
         return sum(sdri) / len(sdri)

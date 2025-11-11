@@ -39,7 +39,7 @@ class SiSdri(BaseMetric):
             loss2 = (
                 loss_func(est_1, target_2, mix) + loss_func(est_2, target_1, mix)
             ) / 2
-            if loss1 < loss2:
+            if loss1 > loss2:
                 sdri.append(loss1)
             else:
                 sdri.append(loss2)

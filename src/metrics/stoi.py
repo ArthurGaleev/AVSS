@@ -28,7 +28,7 @@ class Stoi(BaseMetric):
         ):
             loss1 = (loss_func(est_1, target_1) + loss_func(est_2, target_2)) / 2
             loss2 = (loss_func(est_1, target_2) + loss_func(est_2, target_1)) / 2
-            if loss1 < loss2:
+            if loss1 > loss2:
                 stois.append(loss1)
             else:
                 stois.append(loss2)

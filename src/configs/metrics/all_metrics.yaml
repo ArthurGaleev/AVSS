@@ -10,8 +10,8 @@ inference: # metrics that are calculated during inference (eval)
   - _target_: src.metrics.SiSnri
     name: "SiSnri"
     compare: "average"
-  - _target_: src.metrics.SiSdr
-    name: "SiSdr"
+  - _target_: src.metrics.SiSdri
+    name: "SiSdri"
     compare: "average"
   - _target_: src.metrics.Pesq
     name: "Pesq"

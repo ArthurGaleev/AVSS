@@ -14,7 +14,7 @@ lr_scheduler:
   step_size: 2
   gamma: 0.98
 loss_function:
-  _target_: src.loss.AudioSiSnri
+  _target_: src.loss.AudioSiSnr
 download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2

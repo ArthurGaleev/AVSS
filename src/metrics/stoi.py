@@ -1,5 +1,5 @@
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import stoi_func
+from src.metrics.utils import stoi
 
 
 class Stoi(BaseMetric):
@@ -22,7 +22,7 @@ class Stoi(BaseMetric):
     ):
 
         stois = []
-        loss_func = stoi_func(self.sample_rate).to(audio_first.device)
+        loss_func = stoi(self.sample_rate).to(audio_first.device)
         for est_1, est_2, target_1, target_2 in zip(
             audio_pred_first, audio_pred_second, audio_first, audio_second
         ):

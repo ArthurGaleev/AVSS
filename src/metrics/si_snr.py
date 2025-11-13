@@ -32,8 +32,9 @@ class SiSnr(BaseMetric):
         **batch,
     ):
         batch_size = audio_first.shape[0]
-        loss1, loss2 = torch.zeros(batch_size), torch.zeros(batch_size)
-        self.metric_fn = self.metric_fn.to(audio_first.device)
+        loss1, loss2 = torch.zeros(batch_size, device=audio_first.device), torch.zeros(
+            batch_size, device=audio_first.device
+        )
         if self.compare in ["first", "average"]:
             loss1 += self.metric_fn(audio_pred_first, audio_first, audio_mix)
             loss2 += self.metric_fn(audio_pred_second, audio_first, audio_mix)

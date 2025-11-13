@@ -60,9 +60,7 @@ class Decoder(nn.Module):
                 in_channels=input_dim, out_channels=input_dim, kernel_size=1
             ),
             nn.PReLU(),
-            nn.GroupNorm(
-                num_groups=1, num_channels=input_dim
-            ),
+            nn.GroupNorm(num_groups=1, num_channels=input_dim),
             nn.ConvTranspose1d(
                 in_channels=input_dim,
                 out_channels=input_dim,
@@ -71,9 +69,7 @@ class Decoder(nn.Module):
                 groups=hidden_dim,
             ),
             nn.PReLU(),
-            nn.GroupNorm(
-                num_groups=1, num_channels=input_dim
-            ),
+            nn.GroupNorm(num_groups=1, num_channels=input_dim),
         )
 
         self.out_conv = nn.ConvTranspose1d(

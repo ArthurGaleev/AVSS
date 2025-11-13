@@ -1,7 +1,7 @@
 import torch
 
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import si_sdr_i, si_sdr
+from src.metrics.utils import si_sdr, si_sdr_i
 
 
 class SiSdr(BaseMetric):
@@ -37,11 +37,11 @@ class SiSdr(BaseMetric):
         )
 
         if self.compare in ["first", "average"]:
-             loss1 += self.metric_fn(audio_pred_first, audio_first, audio_mix)
-             loss2 += self.metric_fn(audio_pred_second, audio_first, audio_mix)
+            loss1 += self.metric_fn(audio_pred_first, audio_first, audio_mix)
+            loss2 += self.metric_fn(audio_pred_second, audio_first, audio_mix)
         if self.compare in ["second", "average"]:
-             loss1 += self.metric_fn(audio_pred_first, audio_second, audio_mix)
-             loss2 += self.metric_fn(audio_pred_second, audio_second, audio_mix)
+            loss1 += self.metric_fn(audio_pred_first, audio_second, audio_mix)
+            loss2 += self.metric_fn(audio_pred_second, audio_second, audio_mix)
         si_sdri = torch.max(loss1, loss2)[0].mean()
 
         norm_coeff = 2 if self.compare == "average" else 1

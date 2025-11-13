@@ -62,7 +62,7 @@ class Decoder(nn.Module):
             nn.PReLU(),
             nn.GroupNorm(
                 num_groups=1, num_channels=input_dim
-            ),  # TODO: add cumulative layer norm, because the task is causal
+            ),
             nn.ConvTranspose1d(
                 in_channels=input_dim,
                 out_channels=input_dim,
@@ -73,7 +73,7 @@ class Decoder(nn.Module):
             nn.PReLU(),
             nn.GroupNorm(
                 num_groups=1, num_channels=input_dim
-            ),  # TODO: add cumulative layer norm, because the task is causal
+            ),
         )
 
         self.out_conv = nn.ConvTranspose1d(

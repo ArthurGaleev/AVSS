@@ -42,8 +42,7 @@ class SiSdr(BaseMetric):
         if self.compare in ["second", "average"]:
             loss1 += self.metric_fn(audio_pred_first, audio_second, audio_mix)
             loss2 += self.metric_fn(audio_pred_second, audio_second, audio_mix)
-        si_sdri = torch.max(loss1, loss2)[0].mean()
-
+        si_sdri = torch.max(loss1, loss2).mean()
         norm_coeff = 2 if self.compare == "average" else 1
 
         return si_sdri / norm_coeff

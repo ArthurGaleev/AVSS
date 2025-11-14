@@ -2,6 +2,7 @@ import torch
 from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality
 from torchmetrics.audio.sdr import SignalDistortionRatio
 from torchmetrics.audio.stoi import ShortTimeObjectiveIntelligibility
+from torchmetrics.functional.audio.sdr import signal_distortion_ratio
 
 
 def _project(u, v):
@@ -17,8 +18,10 @@ def _project(u, v):
 #     return 10 * torch.log10(ratio)
 
 
+
 def sdr(est, target):
-    return SignalDistortionRatio()(est, target)
+    return signal_distortion_ratio(est, target)
+
 
 
 def snr(est, target):

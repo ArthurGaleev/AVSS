@@ -1,6 +1,7 @@
+import torch
+
 from src.metrics.base_metric import BaseMetric
 from src.metrics.utils import pesq
-import torch
 
 
 class Pesq(BaseMetric):

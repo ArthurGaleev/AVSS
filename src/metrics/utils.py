@@ -2,43 +2,25 @@ import torch
 from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality
 from torchmetrics.audio.sdr import SignalDistortionRatio
 from torchmetrics.audio.stoi import ShortTimeObjectiveIntelligibility
-from torchmetrics.functional.audio.sdr import signal_distortion_ratio
+from torchmetrics.functional.audio.sdr import signal_distortion_ratio, scale_invariant_signal_distortion_ratio
+from torchmetrics.functional.audio.snr import signal_noise_ratio, scale_invariant_signal_noise_ratio
 
 
-def _project(u, v):
-    """project vector u onto vector v."""
-    scalar = (u * v).sum(dim=-1, keepdim=True) / v.pow(2).sum(dim=-1, keepdim=True)
-    return scalar * v
-
-
-# def sdr(est, target):
-#     scalar = (est * target).sum(dim=-1, keepdim=True) / target.pow(2).sum(dim=-1, keepdim=True)
-#     target_hat = scalar * target
-#     noise = est - target_hat
-#     ratio = target_hat.pow(2).sum(dim=-1) / noise.pow(2).sum(dim=-1)
-#     return 10 * torch.log10(ratio)
-
-
-def snr(est, target):
-    diff = est - target
-    ratio = target.pow(2).sum(dim=-1) / diff.pow(2).sum(dim=-1)
-    return 10 * torch.log10(ratio)
-
+def sdr(est, target):
+    return signal_distortion_ratio(est, target)
 
 def si_sdr(est, target):
-    return snr(est, _project(est, target))
-
-
-def si_snr(est, target):
-    target = target - target.mean(dim=-1, keepdim=True)
-    est = est - est.mean(dim=-1, keepdim=True)
-
-    return snr(est, _project(est, target))
-
+    return scale_invariant_signal_distortion_ratio(est, target)
 
 def si_sdr_i(est, target, mixture):
     return si_sdr(est, target) - si_sdr(mixture, target)
 
+
+def snr(est, target):
+    return signal_noise_ratio(est, target)
+
+def si_snr(est, target):
+    return scale_invariant_signal_noise_ratio(est, target)
 
 def si_snr_i(est, target, mixture):
     return si_snr(est, target) - si_snr(mixture, target)
@@ -50,7 +32,6 @@ def pesq(sample_rate):
         8000,
     ], "Pesq metric is not implemented for sample rates not 16kHz or 8kHz"
     return PerceptualEvaluationSpeechQuality(sample_rate, "wb")
-
 
 def stoi(sample_rate):
     assert sample_rate in [

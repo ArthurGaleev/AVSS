@@ -12,16 +12,11 @@ def _project(u, v):
 
 
 # def sdr(est, target):
-#     e_infer = _project(est, target)
-#     diff = est - target - e_infer
-#     ratio = (est ** 2).sum(dim=-1) / (diff ** 2).sum(dim=-1)
+#     scalar = (est * target).sum(dim=-1, keepdim=True) / target.pow(2).sum(dim=-1, keepdim=True)
+#     target_hat = scalar * target
+#     noise = est - target_hat
+#     ratio = target_hat.pow(2).sum(dim=-1) / noise.pow(2).sum(dim=-1)
 #     return 10 * torch.log10(ratio)
-
-
-
-def sdr(est, target):
-    return signal_distortion_ratio(est, target)
-
 
 
 def snr(est, target):

@@ -17,7 +17,6 @@ class VPEncoder(nn.Module):
         compressed_channels: int,
         num_scales: int = 3,
         downsample_units: int = 2,
-        sru_hidden_size: int = 128,
         heads: int = 4,
     ):
         super().__init__()

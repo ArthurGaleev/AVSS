@@ -5,7 +5,7 @@ from torch import nn
 
 from src.transforms.stft_transfrom import TransformSTFT
 
-from src.model.rtfs_parts import RTFSSeparator, RTFSDecoder, RTFSAudioEncoder, RTFSBlock, RTFSCAFBlock
+from src.model.rtfs_parts import RTFSSeparator, RTFSDecoder, RTFSAudioEncoder, RTFSBlock, RTFSCAFBlock, VPEncoder
 
 
 class RTFSModel(nn.Module):
@@ -93,7 +93,11 @@ class RTFSModel(nn.Module):
         # Visual projection + CAF blocks (optional)
         if use_video:
             # Project raw video embeddings (B, T_v, D_v) -> (B, C_v, T_v)
-            self.vp_block = nn.Identity() # FIXME: Implement CTCNet-Lip
+            self.vp_block = VPEncoder(
+                in_channels=tf_channels,
+                compressed_channels=rtfs_compressed_channels,
+                num_scales=rtfs_num_scales,
+            )
             self.caf_block = RTFSCAFBlock(
                 visual_channels=tf_channels,
                 audio_channels=tf_channels,

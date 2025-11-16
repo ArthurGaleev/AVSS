@@ -26,19 +26,17 @@ class CompressorBlock(nn.Module):
         self.dimension_compression_layer = conv_class(in_channels, out_channels, kernel_size=1) # Compress to shape (B,D,T,F), where D < C_a
         
         compression_layers = []
-        in_channels = out_channels
         for _ in range(downsample_units):
             compression_layers.append(
-                conv_class(in_channels, in_channels * downsample_factor, kernel_size=4, stride=downsample_factor, padding=1, groups=in_channels)
+                conv_class(out_channels, out_channels, kernel_size=4, stride=downsample_factor, padding=1, groups=out_channels)
             ) # Depthwise conv for local feature extraction
-            in_channels *= downsample_factor
 
         self.tf_compression_layers = nn.Sequential(*compression_layers)
 
-    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[List[torch.Tensor], torch.Tensor]:
         """
-        x: (B, C_a, T, F)
-        Returns: List of multi-scale features [(B, D, T_i, F_i), ...]
+        x: (B, C_a, T, F) or (B, C_a, T) for 1D
+        Returns: Tuple[List of multi-scale features [(B, D, T_i, F_i), ...] or [(B, D, T_i), ...], Aggregated feature (B, D, T_q, F_q) or (B, D, T_q)]
         """
         x = self.dimension_compression_layer(x)
         
@@ -49,14 +47,14 @@ class CompressorBlock(nn.Module):
 
         if self.dimensionality_type == '1D':
             _, _, T_q = x.shape
-
-            pooling_fn = lambda x: functional.adaptive_avg_pool1d(x, (T_q,))
+            pooling_fn = lambda x_: functional.adaptive_avg_pool1d(x_, (T_q,))
         elif self.dimensionality_type == '2D':
             _, _, T_q, F_q = x.shape
+            pooling_fn = lambda x_: functional.adaptive_avg_pool2d(x_, (T_q, F_q))
 
-            pooling_fn = lambda x: functional.adaptive_avg_pool2d(x, (T_q, F_q))
-
-        # Perform adaptive average pooling to get fixed size representation
+        # Aggregate multi-scale features by pooling to same size and adding
+        x_agg = xs[-1]
         for x_ in xs[:-1]:
-            x += pooling_fn(x_)
-        return xs
+            x_agg = x_agg + pooling_fn(x_)
+        
+        return xs, x_agg

@@ -79,8 +79,12 @@ class RTFSModel(nn.Module):
         self.ap_block = RTFSBlock(
             in_channels=tf_channels,
             compressed_channels=rtfs_compressed_channels,
-            num_scales=rtfs_num_scales,
-            heads=rtfs_attention_heads,
+            downsample_units=rtfs_tfar_units,
+            unfold_kernel_size=8,
+            sru_hidden_size=rtfs_sru_hidden_size,
+            sru_num_layers=4,
+            attention_heads=rtfs_attention_heads,
+            freqencies=stft_n_fft // 2 + 1,
         )
 
         # Visual projection + CAF blocks (optional)
@@ -103,10 +107,12 @@ class RTFSModel(nn.Module):
                 RTFSBlock(
                     in_channels=tf_channels,
                     compressed_channels=rtfs_compressed_channels,
-                    num_scales=rtfs_num_scales,
+                    downsample_units=rtfs_tfar_units,
+                    unfold_kernel_size=8,
                     sru_hidden_size=rtfs_sru_hidden_size,
-                    heads=rtfs_attention_heads,
-                    tfar_units=rtfs_tfar_units,
+                    sru_num_layers=4,
+                    attention_heads=rtfs_attention_heads,
+                    freqencies=stft_n_fft // 2 + 1,
                 )
                 for _ in range(num_rtfs_blocks)
             ]
@@ -164,14 +170,15 @@ class RTFSModel(nn.Module):
             else:
                 tf_feats = a_1
 
-            # Apply RTFS TF blocks
-            for i, block in enumerate(self.rtfs_blocks):
+            # Apply RTFS TF blocks with residual connections
+            for block in self.rtfs_blocks:
                 tf_feats = block(tf_feats) + a_0 # Residual connection
+            
             # Apply separator in latent space
-            z = self.separator(tf_feats)  # (B, C_a, T_a, F_a)
+            z = self.separator(tf_feats, a_0)  # (B, C_a, T_a, F_a)
 
             # Decode to separated audio features
-            stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)  # (B, C_a, T, F)
+            stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)  # (B, T, F)
 
             wav = self.stft.reconstruct_wav(stft_audio_magnitude, stft_audio_phase)  # (B, T)
             wav = self._match_length(wav, audio_mix.shape[-1])

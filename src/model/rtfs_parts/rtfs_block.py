@@ -24,15 +24,23 @@ class RTFSBlock(nn.Module):
         self,
         in_channels: int,
         compressed_channels: int,
-        num_scales: int = 3,
         downsample_units: int = 2,
+        unfold_kernel_size: int = 8,
         sru_hidden_size: int = 128,
-        heads: int = 4,
+        sru_num_layers: int = 4,
+        attention_heads: int = 4,
+        freqencies: int = 257,
     ):
         super().__init__()
+        
         self.in_channels = in_channels
-        self.num_scales = num_scales
         self.D = compressed_channels
+        self.downsample_units = downsample_units
+        self.unfold_kernel_size = unfold_kernel_size
+        self.sru_hidden_size = sru_hidden_size
+        self.sru_num_layers = sru_num_layers
+        self.heads = attention_heads
+        self.freqencies = freqencies
 
         self.compressor = CompressorBlock(
             in_channels=in_channels,
@@ -50,25 +58,25 @@ class RTFSBlock(nn.Module):
 
         # SRU stacks for dual-path on compressed channels D
         self.freq_pathway = nn.Sequential(
-            nn.Unfold(kernel_size=(1, 8)),
-            SRU(self.D * 8, sru_hidden_size, num_layers=1, bidirectional=True),
+            nn.Unfold(kernel_size=(1, unfold_kernel_size)),
+            SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True),
             # Transpose convolution to restore shape
-            nn.ConvTranspose2d(self.D * 8, self.D, kernel_size=(1, 8)),
+            nn.ConvTranspose1d(self.D * unfold_kernel_size, self.D, kernel_size=unfold_kernel_size),
         )
         self.time_pathway = nn.Sequential(
-            nn.Unfold(kernel_size=(1, 8)),
-            SRU(self.D * 8, sru_hidden_size, num_layers=1, bidirectional=True),
+            nn.Unfold(kernel_size=(1, unfold_kernel_size)),
+            SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True),
             # Transpose convolution to restore shape
-            nn.ConvTranspose2d(self.D * 8, self.D, kernel_size=(1, 8)),
+            nn.ConvTranspose1d(self.D * unfold_kernel_size, self.D, kernel_size=unfold_kernel_size),
         )
 
         # Full-band self-attention block
-        self.attn = TFSelfAttention(channels=self.D, num_heads=heads)
+        self.attn = TFSelfAttention(channels=self.D, freqencies=freqencies, num_heads=attention_heads)
 
     def _dual_path(self, ag: torch.Tensor) -> torch.Tensor:
         """
         ag: (B, D, T', F') compressed multi-scale aggregate.
-        Return restored (B,D,T,F).
+        Return restored (B,D,T',F').
         """
         # Frequency pathway
         B, D, T, F = ag.shape
@@ -89,11 +97,10 @@ class RTFSBlock(nn.Module):
         Returns: (B, C_a, T, F)
         """
         # Compress and multi-scale feature generation
-        xs = self.compressor(A)
-        x = xs[-1]  # (B,D,T',F')
+        xs, x = self.compressor(A)
 
         # Dual-path + attention
-        dp = self._dual_path(x, original_tf=A.shape[-2:])
+        dp = self._dual_path(x)
         # TF-domain self-attention over the dual-path output
         dp = self.attn(dp) + dp
 

@@ -11,7 +11,7 @@ class TFSelfAttention(nn.Module):
 
     See https://arxiv.org/abs/2209.03952 for reference.
     """
-    def __init__(self, channels: int, num_heads: int = 4):
+    def __init__(self, channels: int, freqencies: int, num_heads: int = 4):
         super().__init__()
 
         assert channels % num_heads == 0, "channels must be divisible by num_heads"
@@ -25,13 +25,13 @@ class TFSelfAttention(nn.Module):
         self.v_conv = nn.Conv2d(channels, channels, kernel_size=1)
 
         self.act = nn.PReLU()
-        self.norm = ChannelFrequencyLayerNorm(channels)
+        self.norm = ChannelFrequencyLayerNorm(channels, freqencies)
 
         # Final projection back to channels with nonlinear + norm
         self.out_pathway = nn.Sequential(
             nn.Conv2d(channels, channels, kernel_size=1),
             nn.PReLU(),
-            ChannelFrequencyLayerNorm(channels)
+            ChannelFrequencyLayerNorm(channels, freqencies),
         )
 
     def _split_heads(self, x: torch.Tensor) -> torch.Tensor:

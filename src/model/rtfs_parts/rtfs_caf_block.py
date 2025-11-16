@@ -41,7 +41,7 @@ class RTFSCAFBlock(nn.Module):
                 groups=groups_attention,
             ), # group convolution (B, C_v * h, T_v)
             GlobalLayerNorm(audio_channels * num_heads), # gLN (B, C_a * h, T_v)
-            nn.AvgPool2d(kernel_size=(2,1), stride=(2,1)), # mean pooling across heads (B, C_a, T_v)
+            nn.AvgPool2d(kernel_size=(num_heads,1), stride=(num_heads,1)), # mean pooling across heads (B, C_a, T_v)
             nn.Softmax(dim=-1), # softmax to get attention weights (B, C_a, T_v)
         )
         self.audio_attention_pathway = nn.Sequential(

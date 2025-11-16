@@ -20,8 +20,8 @@ class FFN(nn.Module):
             GlobalLayerNorm(self.hidden_dim),
             nn.PReLU(),
             nn.Dropout(p=self.dropout),
-            nn.Conv1d(self.hidden_dim, channels, kernel_size=5, padding=2, groups=channels),  # depthwise conv
-            GlobalLayerNorm(channels),
+            nn.Conv1d(self.hidden_dim, self.hidden_dim, kernel_size=5, padding=2, groups=self.hidden_dim),  # depthwise conv
+            GlobalLayerNorm(self.hidden_dim),
             nn.PReLU(),
             nn.Dropout(p=self.dropout),
             nn.Conv1d(self.hidden_dim, channels, kernel_size=1, bias=False),

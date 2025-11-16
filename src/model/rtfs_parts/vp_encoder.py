@@ -47,8 +47,7 @@ class VPEncoder(nn.Module):
         Returns: (B, C_a, T, F)
         """
         # Compress and multi-scale feature generation
-        xs = self.compressor(A)
-        x = xs[-1]  # (B,D,T',F')
+        xs, x = self.compressor(A)
 
         # TDANet self-attention
         x = self.attn(x) + x

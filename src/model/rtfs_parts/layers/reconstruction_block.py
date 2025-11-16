@@ -1,17 +1,10 @@
-from typing import List
-import torch
+from typing import List, Literal
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as functional
 
-
-class gLN(nn.GroupNorm):
-    """
-    Global Layer Normalization (gLN) over (C, T, F) dimensions.
-    Implemented as GroupNorm with num_groups=1.
-    """
-    def __init__(self, num_channels: int, eps: float = 1e-8):
-        super().__init__(1, num_channels, eps=eps)
+from src.model.rtfs_parts.layers import GlobalLayerNorm
 
 
 class TFARUnit(nn.Module):
@@ -23,16 +16,16 @@ class TFARUnit(nn.Module):
         super().__init__()
         self.w1_pathway = nn.Sequential(
             nn.Conv2d(channels_n, channels_n, kernel_size=4, stride=2, padding=1, groups=channels_n), # depthwise conv (same size)
-            gLN(channels_n), # gLN
+            GlobalLayerNorm(channels_n), # gLN
             nn.Sigmoid(),
         )
         self.w2_pathway = nn.Sequential(
             nn.Conv2d(channels_m, channels_m, kernel_size=4, stride=2, padding=1, groups=channels_m), # depthwise conv (same size)
-            gLN(channels_m), # gLN
+            GlobalLayerNorm(channels_m), # gLN
         )
         self.w3_pathway = nn.Sequential(
             nn.Conv2d(channels_n, channels_n, kernel_size=3, padding=1, groups=channels_n), # depthwise conv (same size)
-            gLN(channels_n), # gLN
+            GlobalLayerNorm(channels_n), # gLN
         )
 
     def forward(self, m: torch.Tensor, n: torch.Tensor) -> torch.Tensor:

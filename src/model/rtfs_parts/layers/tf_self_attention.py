@@ -1,16 +1,8 @@
 import torch
-
 import torch.nn as nn
 import torch.nn.functional as functional
 
-
-class cfLN(nn.LayerNorm):
-    """
-    Channel-Frequency Layer Normalization (cfLN).
-    Normalizes over (C, F) dimensions for each time frame.
-    """
-    def __init__(self, num_channels: int, num_freqs: int, eps: float = 1e-8):
-        super().__init__((num_channels, num_freqs), eps=eps)
+from src.model.rtfs_parts.layers.normalization import ChannelFrequencyLayerNorm
 
 
 class TFSelfAttention(nn.Module):
@@ -33,13 +25,13 @@ class TFSelfAttention(nn.Module):
         self.v_conv = nn.Conv2d(channels, channels, kernel_size=1)
 
         self.act = nn.PReLU()
-        self.norm = cfLN(channels)
+        self.norm = ChannelFrequencyLayerNorm(channels)
 
         # Final projection back to channels with nonlinear + norm
         self.out_pathway = nn.Sequential(
             nn.Conv2d(channels, channels, kernel_size=1),
             nn.PReLU(),
-            cfLN(channels)
+            ChannelFrequencyLayerNorm(channels)
         )
 
     def _split_heads(self, x: torch.Tensor) -> torch.Tensor:

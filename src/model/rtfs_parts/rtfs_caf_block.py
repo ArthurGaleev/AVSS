@@ -2,6 +2,8 @@ import torch
 from torch import nn
 import torch.nn.functional as functional
 
+from src.model.rtfs_parts.layers import GlobalLayerNorm
+
 
 class RTFSCAFBlock(nn.Module):
     """
@@ -38,7 +40,7 @@ class RTFSCAFBlock(nn.Module):
                 kernel_size=1,
                 groups=groups_attention,
             ), # group convolution (B, C_v * h, T_v)
-            nn.GroupNorm(num_groups=1, num_channels=audio_channels * num_heads), # gLN (B, C_a * h, T_v)
+            GlobalLayerNorm(audio_channels * num_heads), # gLN (B, C_a * h, T_v)
             nn.AvgPool2d(kernel_size=(2,1), stride=(2,1)), # mean pooling across heads (B, C_a, T_v)
             nn.Softmax(dim=-1), # softmax to get attention weights (B, C_a, T_v)
         )
@@ -49,7 +51,7 @@ class RTFSCAFBlock(nn.Module):
                 kernel_size=1,
                 groups=groups_attention,
             ), # depthwise convolution (B, C_a, T_a, F)
-            nn.GroupNorm(num_groups=1, num_channels=audio_channels), # gLN (B, C_a, T_a, F)
+            GlobalLayerNorm(audio_channels), # gLN (B, C_a, T_a, F)
         )
 
         # Gated Fusion components (F2)
@@ -60,7 +62,7 @@ class RTFSCAFBlock(nn.Module):
                 kernel_size=1,
                 groups=groups_gated,
             ), # group convolution (B, C_a, T_v)
-            nn.GroupNorm(num_groups=1, num_channels=audio_channels), # gLN (B, C_a, T_v)
+            GlobalLayerNorm(audio_channels), # gLN (B, C_a, T_v)
         )
         self.audio_gated_pathway = nn.Sequential(
             nn.Conv2d(
@@ -69,7 +71,7 @@ class RTFSCAFBlock(nn.Module):
                 kernel_size=1,
                 groups=groups_gated,
             ), # depthwise convolution (B, C_a, T_a, F)
-            nn.GroupNorm(num_groups=1, num_channels=audio_channels), # gLN (B, C_a, T_a, F)
+            GlobalLayerNorm(audio_channels), # gLN (B, C_a, T_a, F)
             nn.ReLU(), # ReLU activation
         )
 

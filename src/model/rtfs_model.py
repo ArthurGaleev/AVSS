@@ -129,7 +129,7 @@ class RTFSModel(nn.Module):
         Args:
             audio_mix: mixed audio waveform, shape (B, T)
             video_embeddings: video features corresponding to the target speaker, 
-                            shape (B, T_v, D_v) or None
+                            shape (B, S, D_v, T_v) or None
             **batch: other data in the batch
         Returns:
             dict with keys "audio_s{i}" of shape (B, T) for each speaker i
@@ -146,28 +146,40 @@ class RTFSModel(nn.Module):
 
         # Prepare visual features if available and fuse with audio
         if self.use_video and video_embeddings is not None:
-            v_1 = self.vp_block(video_embeddings)  # (B, C_v, T_v)
-            tf_feats = self.caf_block(v_1, a_1)  # (B, C_a, T_a, F_a)
+            B, S, _, _ = video_embeddings.shape
+
+            video_embeddings = video_embeddings.squeeze(1)  # (B * S, D_v, T_v)
+            v_1 = self.vp_block(video_embeddings)  # (B * S, D_v, T_v)
+
+            _, D_v, T_v = v_1.shape
+            v_1 = v_1.reshape(B, S, D_v, T_v)
         else:
-            tf_feats = a_1
+            v_1 = None
 
-        # Apply RTFS TF blocks
-        for i, block in enumerate(self.rtfs_blocks):
-            tf_feats = block(tf_feats) + a_0 # Residual connection
-        # Apply separator in latent space
-        z = self.separator(tf_feats)  # (B, C_a, T_a, F_a)
+        output = {}
 
-        # Decode to separated audio features
-        stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)  # (B, C_a, T, F)
+        for speaker_idx in range(self.n_speakers):
+            if v_1 is not None:
+                tf_feats = self.caf_block(v_1[:, speaker_idx, :, :], a_1)  # (B, C_a, T_a, F_a)
+            else:
+                tf_feats = a_1
 
-        wav = self.stft.reconstruct_wav(stft_audio_magnitude, stft_audio_phase)  # (B, T)
-        wav = self._match_length(wav, audio_mix.shape[-1])
+            # Apply RTFS TF blocks
+            for i, block in enumerate(self.rtfs_blocks):
+                tf_feats = block(tf_feats) + a_0 # Residual connection
+            # Apply separator in latent space
+            z = self.separator(tf_feats)  # (B, C_a, T_a, F_a)
 
-        # Apply masks and decode each speaker
-        output = {
-            "audio_s0": wav,
-            "audio_s1": audio_mix - wav, # FIXME: Reapply all the process to second speaker
-        }
+            # Decode to separated audio features
+            stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)  # (B, C_a, T, F)
+
+            wav = self.stft.reconstruct_wav(stft_audio_magnitude, stft_audio_phase)  # (B, T)
+            wav = self._match_length(wav, audio_mix.shape[-1])
+
+            output[f"audio_s{speaker_idx}"] = wav
+
+            # Remove speaker from mixture for next iteration
+            a_1 = a_1 - wav
         
         return output
     

@@ -25,9 +25,7 @@ class RTFSModel(nn.Module):
         use_video: bool = True,
         # RTFS-specific hyperparameters
         tf_channels: int = 256,
-        tf_freq_bins: int = 8,
         num_rtfs_blocks: int = 2,
-        num_caf_blocks: int = 2,
         rtfs_compressed_channels: int = 128,
         rtfs_num_scales: int = 3,
         rtfs_sru_hidden_size: int = 128,
@@ -45,9 +43,7 @@ class RTFSModel(nn.Module):
             encoder_channels: number of channels in encoder output
             use_video: whether to use video embeddings
             tf_channels: number of channels in TF encoder/decoder
-            tf_freq_bins: number of frequency bins in TF encoder/decoder
             num_rtfs_blocks: number of RTFS blocks to use
-            num_caf_blocks: number of CAF blocks to use
             rtfs_compressed_channels: number of compressed channels in RTFS blocks
             rtfs_num_scales: number of scales in RTFS blocks
             rtfs_sru_hidden_size: hidden size for SRU in RTFS blocks
@@ -66,9 +62,7 @@ class RTFSModel(nn.Module):
         # Save some RTFS-specific sizes for shape handling
         self.encoder_channels = encoder_channels
         self.tf_channels = tf_channels
-        self.tf_freq_bins = tf_freq_bins
         self.num_rtfs_blocks = num_rtfs_blocks
-        self.num_caf_blocks = num_caf_blocks
 
         self.stft = TransformSTFT(
             n_fft=stft_n_fft,
@@ -79,15 +73,14 @@ class RTFSModel(nn.Module):
 
         # Audio TF encoder/decoder around the RTFS blocks
         self.audio_encoder = RTFSAudioEncoder(
-            in_channels=encoder_channels,
             out_channels=tf_channels,
-            freq_bins=tf_freq_bins,
         )
 
         self.ap_block = RTFSBlock(
             in_channels=tf_channels,
             compressed_channels=rtfs_compressed_channels,
             num_scales=rtfs_num_scales,
+            heads=rtfs_attention_heads,
         )
 
         # Visual projection + CAF blocks (optional)
@@ -129,8 +122,6 @@ class RTFSModel(nn.Module):
     def forward(
             self,
             audio_mix: torch.Tensor,
-            stft_audio_magnitude: torch.Tensor,
-            stft_audio_phase: torch.Tensor,
             video_embeddings: Optional[torch.Tensor] = None,
             **batch
         ):

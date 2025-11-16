@@ -9,15 +9,16 @@ from src.model.rtfs_parts.layers import CompressorBlock, ReconstructionBlock, TF
 class RTFSBlock(nn.Module):
     """
     RTFS Block (simplified implementation of paper description).
-    Input: (B, C_a, T, F)
-    Output: (B, C_a, T, F)
+    
     Steps:
       1. Compress channels C_a -> D via 1x1 conv.
       2. Multi-scale feature generation (adaptive pooling).
       3. Dual-path processing: frequency then time with SRU layers.
       4. Self-attention over TF plane.
       5. TF-AR reconstruction units (multi-scale upsampling with U-Net style skips).
-      6. Project back to C_a and add residual.
+      6. Project back to C_a.
+
+    See https://arxiv.org/abs/2309.17189 for reference.
     """
     def __init__(
         self,
@@ -34,15 +35,17 @@ class RTFSBlock(nn.Module):
         self.D = compressed_channels
 
         self.compressor = CompressorBlock(
-            in_channels,
-            compressed_channels,
+            in_channels=in_channels,
+            out_channels=compressed_channels,
             downsample_units=downsample_units,
             downsample_factor=2,
+            dimensionality_type='2D',
         )
         self.reconstructor = ReconstructionBlock(
-            compressed_channels,
-            in_channels,
+            in_channels=compressed_channels,
+            out_channels=in_channels,
             upsample_units=downsample_units,
+            dimensionality_type='2D',
         )
 
         # SRU stacks for dual-path on compressed channels D
@@ -50,20 +53,17 @@ class RTFSBlock(nn.Module):
             nn.Unfold(kernel_size=(1, 8)),
             SRU(self.D * 8, sru_hidden_size, num_layers=1, bidirectional=True),
             # Transpose convolution to restore shape
-            nn.Fold(output_size=(1, 8), kernel_size=(1, 8)),
+            nn.ConvTranspose2d(self.D * 8, self.D, kernel_size=(1, 8)),
         )
         self.time_pathway = nn.Sequential(
             nn.Unfold(kernel_size=(1, 8)),
             SRU(self.D * 8, sru_hidden_size, num_layers=1, bidirectional=True),
             # Transpose convolution to restore shape
-            nn.Fold(output_size=(1, 8), kernel_size=(1, 8)),
+            nn.ConvTranspose2d(self.D * 8, self.D, kernel_size=(1, 8)),
         )
 
         # Full-band self-attention block
         self.attn = TFSelfAttention(channels=self.D, num_heads=heads)
-
-        # Final 1x1 conv to restore channels
-        self.expand = nn.Conv2d(self.D, in_channels, kernel_size=1)
 
     def _dual_path(self, ag: torch.Tensor) -> torch.Tensor:
         """

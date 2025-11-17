@@ -1,10 +1,10 @@
 train:
   _target_: src.datasets.YandexDownload
   instance_transforms: ${transforms.instance_transforms.train}
-  download_name: "dla_dataset_small_a"
+  download_name: ${download_name}
   part: "train"
 val:
   _target_: src.datasets.YandexDownload
   instance_transforms: ${transforms.instance_transforms.train}
-  download_name: "dla_dataset_small_a"
+  download_name: ${download_name}
   part: "val"

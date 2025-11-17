@@ -12,7 +12,7 @@ class Trainer(BaseTrainer):
     Trainer class. Defines the logic of batch logging and processing.
     """
 
-    def process_batch(self, batch, metrics: MetricTracker):
+    def process_batch(self, batch, metrics: MetricTracker, zero_grad=True, update=True):
         """
         Run batch through the model, compute metrics, compute loss,
         and do training step (during training stage).
@@ -34,9 +34,7 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
         batch.update(self.transform_batch(self.get_spectrogram(batch)))
-        metric_funcs = self.metrics["inference"]
-        if self.is_train:
-            metric_funcs = self.metrics["train"]
+        if self.is_train and zero_grad:
             self.optimizer.zero_grad()
         outputs = self.model(**batch)
         batch.update(outputs)
@@ -45,17 +43,27 @@ class Trainer(BaseTrainer):
         batch.update(all_losses)
 
         if self.is_train:
-            batch["loss"].backward()  # sum of all losses is always called loss
-            self._clip_grad_norm()
-            self.optimizer.step()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+            if self.accumulation_steps is not None:
+                self.autocast_grad_scaler.scale(
+                    batch["loss"] / self.accumulation_steps
+                ).backward()  # sum of all losses is always called loss
+            else:
+                self.autocast_grad_scaler.scale(
+                    batch["loss"]
+                ).backward()  # sum of all losses is always called loss
+            if update:
+                self._clip_grad_norm()
+                self.autocast_grad_scaler.step(self.optimizer)
+                self.autocast_grad_scaler.update()
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
 
-        for met in metric_funcs:
+        metrics_split = "train" if self.is_train else "inference"
+        for met in self.metrics[metrics_split]:
             metrics.update(met.name, met(**batch))
         return batch
 
@@ -79,25 +87,25 @@ class Trainer(BaseTrainer):
             self.log_audio(batch["audio_first"], audio_name="audio_first")
             self.log_audio(batch["audio_second"], audio_name="audio_second")
             self.log_audio(batch["audio_mix"], audio_name="audio_mix")
-            self.log_spectrogram(
-                batch["spectrogram_first"], spectrogram_name="spectrogram_first"
-            )
-            self.log_spectrogram(
-                batch["spectrogram_second"], spectrogram_name="spectrogram_second"
-            )
-            self.log_spectrogram(
-                batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
-            )
+            # self.log_spectrogram(
+            #     batch["spectrogram_first"], spectrogram_name="spectrogram_first"
+            # )
+            # self.log_spectrogram(
+            #     batch["spectrogram_second"], spectrogram_name="spectrogram_second"
+            # )
+            # self.log_spectrogram(
+            #     batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
+            # )
             self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
             self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
-            self.log_spectrogram(
-                batch["spectrogram_pred_first"],
-                spectrogram_name="spectrogram_pred_first",
-            )
-            self.log_spectrogram(
-                batch["spectrogram_pred_second"],
-                spectrogram_name="spectrogram_pred_second",
-            )
+            # self.log_spectrogram(
+            #     batch["spectrogram_pred_first"],
+            #     spectrogram_name="spectrogram_pred_first",
+            # )
+            # self.log_spectrogram(
+            #     batch["spectrogram_pred_second"],
+            #     spectrogram_name="spectrogram_pred_second",
+            # )
         else:
             # Log Stuff
             self.log_audio(batch["audio_first"], audio_name="audio_first")

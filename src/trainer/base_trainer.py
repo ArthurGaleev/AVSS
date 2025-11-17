@@ -9,9 +9,8 @@ from tqdm.auto import tqdm
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
-from src.utils.torch_utils import dtype_to_str, str_to_dtype
-
 from src.utils.lipreading.preprocess import get_preprocessing_pipeline
+from src.utils.torch_utils import dtype_to_str, str_to_dtype
 
 
 class BaseTrainer:
@@ -373,7 +372,7 @@ class BaseTrainer:
         for tensor_for_device in self.cfg_trainer.device_tensors:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
-    
+
     def get_video_embeddings(self, batch):
         self.lipreading_model.eval()
         preprocessing_func = get_preprocessing_pipeline()
@@ -382,10 +381,12 @@ class BaseTrainer:
         # data = preprocessing_func(np.load(args.mouth_patch_path)['data'])  # data: TxHxW
 
         # TODO we need smth similar
-        data = preprocessing_func(batch['mouth'])
-        
-        return self.lipreading_model(torch.FloatTensor(data)[None, None, :, :, :].to(self.device), lengths=[data.shape[0]])
+        data = preprocessing_func(batch["mouth"])
 
+        return self.lipreading_model(
+            torch.FloatTensor(data)[None, None, :, :, :].to(self.device),
+            lengths=[data.shape[0]],
+        )
 
     def get_spectrogram(self, batch):
         new_data = {}

@@ -1,5 +1,7 @@
 import torch.nn as nn
+
 from src.utils.lipreading.models.swish import Swish
+
 
 class SELayer(nn.Module):
     def __init__(self, channel, reduction=2):
@@ -9,7 +11,7 @@ class SELayer(nn.Module):
             nn.Linear(channel, channel // reduction, bias=False),
             Swish(),
             nn.Linear(channel // reduction, channel, bias=False),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, x):

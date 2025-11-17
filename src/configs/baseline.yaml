@@ -38,4 +38,3 @@ trainer:
   parallel: False
   seed: 1
   lipreading_model_name: "" # pretrained model from mpc001 repo (check src\utils\lipreading\load_model.py for the correct name)
-

@@ -25,4 +25,3 @@ inference: # metrics that are calculated during inference (eval)
     name: "Stoi"
     compare: "average"
     sample_rate: ${sample_rate}
-  

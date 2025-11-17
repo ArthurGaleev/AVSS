@@ -13,17 +13,16 @@ class Compose(object):
         return sample
 
     def __repr__(self):
-        format_string = self.__class__.__name__ + '('
+        format_string = self.__class__.__name__ + "("
         for t in self.preprocess:
-            format_string += '\n'
-            format_string += '    {0}'.format(t)
-        format_string += '\n)'
+            format_string += "\n"
+            format_string += "    {0}".format(t)
+        format_string += "\n)"
         return format_string
 
 
 class Normalize(object):
-    """Normalize a ndarray image with mean and standard deviation.
-    """
+    """Normalize a ndarray image with mean and standard deviation."""
 
     def __init__(self, mean, std):
         self.mean = mean
@@ -40,12 +39,14 @@ class Normalize(object):
         return frames
 
     def __repr__(self):
-        return self.__class__.__name__+'(mean={0}, std={1})'.format(self.mean, self.std)
+        return self.__class__.__name__ + "(mean={0}, std={1})".format(
+            self.mean, self.std
+        )
 
 
 class CenterCrop(object):
-    """Crop the given image at the center
-    """
+    """Crop the given image at the center"""
+
     def __init__(self, size):
         self.size = size
 
@@ -58,18 +59,14 @@ class CenterCrop(object):
         """
         t, h, w = frames.shape
         th, tw = self.size
-        delta_w = int(round((w - tw))/2.)
-        delta_h = int(round((h - th))/2.)
-        frames = frames[:, delta_h:delta_h+th, delta_w:delta_w+tw]
+        delta_w = int(round((w - tw)) / 2.0)
+        delta_h = int(round((h - th)) / 2.0)
+        frames = frames[:, delta_h : delta_h + th, delta_w : delta_w + tw]
         return frames
+
 
 def get_preprocessing_pipeline():
     crop_size = (88, 88)
     (mean, std) = (0.421, 0.165)
 
-    return Compose([
-        Normalize( 0.0,255.0 ),
-        CenterCrop(crop_size),
-        Normalize(mean, std)
-        ]
-    )
+    return Compose([Normalize(0.0, 255.0), CenterCrop(crop_size), Normalize(mean, std)])

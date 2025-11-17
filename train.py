@@ -7,13 +7,12 @@ from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
-from src.utils.init_utils import set_random_seed, setup_saving_and_logging
-from src.utils.lipreading.load_model import load_lipreading_model
 from src.utils.init_utils import (
     select_most_suitable_gpu,
     set_random_seed,
     setup_saving_and_logging,
 )
+from src.utils.lipreading.load_model import load_lipreading_model
 from src.utils.torch_utils import set_tf32_allowance
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -56,7 +55,11 @@ def main(config):
     logger.info(model)
 
     if config.trainer.lipreading_model_name:
-        lipreading_model = load_lipreading_model(model_name=config.trainer.lipreading_model_name, logger=logger, device=device)
+        lipreading_model = load_lipreading_model(
+            model_name=config.trainer.lipreading_model_name,
+            logger=logger,
+            device=device,
+        )
     else:
         lipreading_model = None
 

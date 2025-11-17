@@ -9,6 +9,8 @@ from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
 
+from src.utils.lipreading.preprocess import get_preprocessing_pipeline
+
 
 class BaseTrainer:
     """
@@ -30,6 +32,7 @@ class BaseTrainer:
         epoch_len=None,
         skip_oom=True,
         batch_transforms=None,
+        lipreading_model=None,
     ):
         """
         Args:
@@ -54,6 +57,8 @@ class BaseTrainer:
             batch_transforms (dict[Callable] | None): transforms that
                 should be applied on the whole batch. Depend on the
                 tensor name.
+            lipreading_model (nn.Module): Pytorch lipreading model for video
+                moddality.
         """
         self.is_train = True
 
@@ -71,6 +76,8 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.batch_transforms = batch_transforms
+
+        self.lipreading_model = lipreading_model
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -347,6 +354,19 @@ class BaseTrainer:
         for tensor_for_device in self.cfg_trainer.device_tensors:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
+    
+    def get_video_embeddings(self, batch):
+        self.lipreading_model.eval()
+        preprocessing_func = get_preprocessing_pipeline()
+
+        # in original repo
+        # data = preprocessing_func(np.load(args.mouth_patch_path)['data'])  # data: TxHxW
+
+        # TODO we need smth similar
+        data = preprocessing_func(batch['mouth'])
+        
+        return self.lipreading_model(torch.FloatTensor(data)[None, None, :, :, :].to(self.device), lengths=[data.shape[0]])
+
 
     def get_spectrogram(self, batch):
         new_data = {}

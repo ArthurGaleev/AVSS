@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+from src.utils.lipreading.load_model import load_lipreading_model
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -32,6 +33,7 @@ def main(config):
         device = "cuda" if torch.cuda.is_available() else "cpu"
     else:
         device = config.trainer.device
+
     # setup data_loader instances
     # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, device)
@@ -39,6 +41,11 @@ def main(config):
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     logger.info(model)
+
+    if config.trainer.lipreading_model_name:
+        lipreading_model = load_lipreading_model(model_name=config.trainer.lipreading_model_name, logger=logger, device=device)
+    else:
+        lipreading_model = None
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)
@@ -70,6 +77,7 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
+        lipreading_model=lipreading_model,
     )
 
     trainer.train()

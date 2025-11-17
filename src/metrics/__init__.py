@@ -1,4 +1,6 @@
 from src.metrics.pesq import Pesq
-from src.metrics.si_sdr import SiSdri
-from src.metrics.si_snri import SiSnri
+from src.metrics.si_sdr import SiSdr
+from src.metrics.si_snr import SiSnr
 from src.metrics.stoi import Stoi
+
+__all__ = ["Pesq", "SiSdr", "SiSnr", "Stoi"]

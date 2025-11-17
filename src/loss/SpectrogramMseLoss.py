@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 
 
-class SpectrogramLoss(torch.nn.Module):
+class SpectrogramMseLoss(torch.nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 

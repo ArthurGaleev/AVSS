@@ -1,10 +1,10 @@
 import torch
 
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import si_sdr, si_sdr_i
+from src.metrics.utils import si_snr, si_snr_i
 
 
-class SiSdr(BaseMetric):
+class SiSnr(BaseMetric):
     def __init__(self, compare="first", improved: bool = True, *args, **kwargs):
         assert compare in [
             "first",
@@ -18,8 +18,8 @@ class SiSdr(BaseMetric):
         self.improved = improved
 
         self.metric_fn = {
-            True: si_sdr_i,
-            False: lambda est, target, _: si_sdr(est, target),
+            True: si_snr_i,
+            False: lambda est, target, _: si_snr(est, target),
         }[self.improved]
 
     def __call__(
@@ -35,7 +35,6 @@ class SiSdr(BaseMetric):
         loss1, loss2 = torch.zeros(batch_size, device=audio_first.device), torch.zeros(
             batch_size, device=audio_first.device
         )
-
         if self.compare in ["first", "average"]:
             loss1 += self.metric_fn(audio_pred_first, audio_first, audio_mix)
             loss2 += self.metric_fn(audio_pred_second, audio_first, audio_mix)

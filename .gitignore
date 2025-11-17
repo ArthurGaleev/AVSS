@@ -107,6 +107,7 @@ saved/
 wandb/
 .cometml-runs/
 outputs/
+utils/lipreading/loaded_models
 
 # editor, os cache directory
 .vscode/

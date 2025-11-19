@@ -8,10 +8,6 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 
-from src.utils.io_utils import ROOT_PATH
-from src.utils.lipreading.load_model import load_lipreading_model
-from src.utils.lipreading.preprocess import get_preprocessing_pipeline
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +28,6 @@ class BaseDataset(Dataset):
         max_audio_length=None,
         shuffle_index=False,
         instance_transforms=None,
-        lipreading_model_name=None,
         device=None,
     ):
         """
@@ -52,7 +47,7 @@ class BaseDataset(Dataset):
             lipreading_model (nn.Module): Pytorch lipreading model for video
                 moddality.
         """
-        assert device is not None, "Some device is specified in instatiate"
+        assert device is not None
         self._assert_index_is_valid(index)
 
         index = self._filter_records_from_dataset(index, max_audio_length)
@@ -63,15 +58,6 @@ class BaseDataset(Dataset):
         self._index: list[dict] = index
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
-        # load pre-trained model for video embedds
-        if lipreading_model_name:
-            lipreading_model = load_lipreading_model(
-                model_name=lipreading_model_name,
-                device=device,
-            )
-        else:
-            lipreading_model = None
-        self.lipreading_model = lipreading_model
         self.device = device
 
     def __getitem__(self, ind):
@@ -97,29 +83,10 @@ class BaseDataset(Dataset):
             data_dict["audio_path_second"]
         ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
-        if self.lipreading_model is not None:
-            preprocessing_func = get_preprocessing_pipeline()
-            with torch.no_grad():
-                load_dir = ROOT_PATH / "data/saved/mouth_embs"
-                load_dir.mkdir(exist_ok=True, parents=True)
-                mouth_save_path = load_dir / (f"mouth_emb_{ind}.pth")
-                if mouth_save_path.exists():
-                    data_dict["mouth_embedds"] = torch.load(
-                        mouth_save_path, map_location=self.device
-                    )
-                else:
-                    mouth_data = preprocessing_func(
-                        np.load(data_dict["mouth_path"])["data"]
-                    )
-                    data_dict["mouth_embedds"] = self.lipreading_model(
-                        torch.FloatTensor(mouth_data)[None, None, :, :, :].to(
-                            self.device
-                        ),
-                        lengths=[mouth_data.shape[0]],
-                    ).squeeze(
-                        0
-                    )  # (T, H*W) shape, e.g. (50, 1024)
-                    torch.save(data_dict["mouth_embedds"], mouth_save_path)
+        if "mouth_save_path" in data_dict:
+            mouth_save_path = Path(data_dict["mouth_save_path"])
+            assert mouth_save_path.exists()
+            data_dict["mouth_embedds"] = torch.load(mouth_save_path, map_location="cpu")
         data_dict = self.preprocess_data(data_dict)  # use only wave augs
         return data_dict
 

@@ -132,7 +132,7 @@ def load_model(model_name, model, device, optimizer=None, allow_size_mismatch=Fa
     return model
 
 
-def load_lipreading_model(model_name, logger, device):
+def load_lipreading_model(model_name, device):
     # update default args with args from selected model
     update_args(
         ROOT_PATH
@@ -161,5 +161,5 @@ def load_lipreading_model(model_name, logger, device):
         device=device,
         allow_size_mismatch=args["allow_size_mismatch"],
     )
-    logger.info(f"Lipreading model has been successfully loaded")
+    print(f"Lipreading model has been successfully loaded")
     return model

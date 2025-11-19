@@ -5,6 +5,11 @@ from tqdm.auto import tqdm
 
 from src.datasets.base_dataset import BaseDataset
 
+import numpy as np
+import torch
+
+from src.utils.lipreading.preprocess import get_preprocessing_pipeline
+
 
 class CustomDirAudioDataset(BaseDataset):
     def __init__(
@@ -12,6 +17,7 @@ class CustomDirAudioDataset(BaseDataset):
         audio_mix_dir,
         audio_first_dir=None,
         audio_second_dir=None,
+        mouths_dir=None,
         *args,
         **kwargs,
     ):
@@ -20,18 +26,42 @@ class CustomDirAudioDataset(BaseDataset):
             entry = {}
             if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
                 entry["audio_path_mix"] = str(path)
+                t_info = torchaudio.info(str(path))
+                mix_length = t_info.num_frames / t_info.sample_rate
+                entry["audio_len"] = mix_length
+                
                 if audio_first_dir is not None and audio_second_dir is not None:
                     entry["audio_path_first"] = str(audio_first_dir / path.name)
                     entry["audio_path_second"] = str(audio_second_dir / path.name)
-                t_info = torchaudio.info(str(path))
-                mix_length = t_info.num_frames / t_info.sample_rate
-                if audio_first_dir is not None:
                     t_info = torchaudio.info(str(audio_first_dir / path.name))
                     first_length = t_info.num_frames / t_info.sample_rate
                     t_info = torchaudio.info(str(audio_second_dir / path.name))
                     second_length = t_info.num_frames / t_info.sample_rate
                     assert mix_length == first_length == second_length
-                entry["audio_len"] = mix_length
+
+                    if mouths_dir:
+                        first_mouth_path, second_mouth_path = path.stem.split('_')
+
+                        first_mouth_path = mouths_dir / (first_mouth_path + '.npz')
+                        second_mouth_path = (mouths_dir / (second_mouth_path + '.npz'))
+
+                        preprocessing_func = get_preprocessing_pipeline()
+                        if first_mouth_path.exists():
+                            mouth_data = preprocessing_func(np.load(first_mouth_path)['data'])
+                        else:
+                            assert second_mouth_path.exists(), "One of mouth paths should exist"
+                            mouth_data = preprocessing_func(np.load(second_mouth_path)['data'])
+
+                        entry['mouth_embedds'] = self.lipreading_model(
+                                torch.FloatTensor(mouth_data)[None, None, :, :, :].to(self.device),
+                                lengths=[mouth_data.shape[0]]
+                        ).squeeze(1).cpu() # TODO cpu?
+                    
             if len(entry) > 0:
                 data.append(entry)
+
+        if mouths_dir and self.lipreading_model:
+            del self.lipreading_model
+            torch.cuda.empty_cache()
+
         super().__init__(data, *args, **kwargs)

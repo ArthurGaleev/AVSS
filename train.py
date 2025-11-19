@@ -12,7 +12,6 @@ from src.utils.init_utils import (
     set_random_seed,
     setup_saving_and_logging,
 )
-from src.utils.lipreading.load_model import load_lipreading_model
 from src.utils.torch_utils import set_tf32_allowance
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -54,15 +53,6 @@ def main(config):
         model = torch.nn.DataParallel(model)
     logger.info(model)
 
-    if config.trainer.lipreading_model_name:
-        lipreading_model = load_lipreading_model(
-            model_name=config.trainer.lipreading_model_name,
-            logger=logger,
-            device=device,
-        )
-    else:
-        lipreading_model = None
-
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)
 
@@ -93,8 +83,7 @@ def main(config):
         logger=logger,
         writer=writer,
         batch_transforms=batch_transforms,
-        skip_oom=config.trainer.get("skip_oom", True),
-        lipreading_model=lipreading_model,
+        skip_oom=config.trainer.get("skip_oom", True)
     )
 
     trainer.train()

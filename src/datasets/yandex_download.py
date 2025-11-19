@@ -41,7 +41,7 @@ class YandexDownload(CustomDirAudioDataset):
     ):
         self.lipreading_model = lipreading_model
         self.device = device
-        
+
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets"
         if not (data_dir / download_name / "audio" / part).exists():
@@ -59,9 +59,10 @@ class YandexDownload(CustomDirAudioDataset):
             zip.extractall(data_dir)
         data_dir = data_dir / download_name
         super().__init__(
-            data_dir / "audio" / part / "mix", 
-            data_dir / "audio" / part / "s1", 
-            data_dir / "audio" / part / "s2", 
+            data_dir / "audio" / part / "mix",
+            data_dir / "audio" / part / "s1",
+            data_dir / "audio" / part / "s2",
             data_dir / "mouths",
-            *args, **kwargs
+            *args,
+            **kwargs,
         )

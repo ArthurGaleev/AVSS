@@ -79,7 +79,7 @@ def get_dataloaders(config, device):
         dataset = instantiate(
             config.datasets[dataset_partition],
             lipreading_model=lipreading_model,
-            device=device
+            device=device,
         )  # instance transforms are defined inside
 
         assert config.batch_size <= len(dataset), (

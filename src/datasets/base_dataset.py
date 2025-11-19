@@ -8,6 +8,7 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 
+from src.utils.io_utils import ROOT_PATH
 from src.utils.lipreading.load_model import load_lipreading_model
 from src.utils.lipreading.preprocess import get_preprocessing_pipeline
 
@@ -98,7 +99,8 @@ class BaseDataset(Dataset):
         if self.lip_reading_model is not None:
             preprocessing_func = get_preprocessing_pipeline()
             mouth_data = preprocessing_func(np.load(data_dict["mouth_path"])["data"])
-            load_dir = Path("data/saved/mouth_embs")
+            load_dir = ROOT_PATH / "data/saved/mouth_embs"
+            load_dir.mkdir(exist_ok=True, parents=True)
             mouth_save_path = load_dir / (f"mouth_emb_{ind}.pth")
             with torch.no_grad():
                 if mouth_save_path.exists():

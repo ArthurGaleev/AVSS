@@ -72,6 +72,7 @@ class BaseDataset(Dataset):
         else:
             lipreading_model = None
         self.lipreading_model = lipreading_model
+        self.device = device
 
     def __getitem__(self, ind):
         """
@@ -104,7 +105,7 @@ class BaseDataset(Dataset):
                 mouth_save_path = load_dir / (f"mouth_emb_{ind}.pth")
                 if mouth_save_path.exists():
                     data_dict["mouth_embedds"] = torch.load(
-                        mouth_save_path, map_location=self.lipreading_model.device
+                        mouth_save_path, map_location=self.device
                     )
                 else:
                     mouth_data = preprocessing_func(
@@ -112,7 +113,7 @@ class BaseDataset(Dataset):
                     )
                     data_dict["mouth_embedds"] = self.lipreading_model(
                         torch.FloatTensor(mouth_data)[None, None, :, :, :].to(
-                            self.lipreading_model.device
+                            self.device
                         ),
                         lengths=[mouth_data.shape[0]],
                     ).squeeze(

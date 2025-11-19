@@ -57,18 +57,13 @@ class RTFSBlock(nn.Module):
         )
 
         # SRU stacks for dual-path on compressed channels D
-        self.freq_pathway = nn.Sequential(
-            nn.Unfold(kernel_size=(1, unfold_kernel_size)),
-            SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True),
-            # Transpose convolution to restore shape
-            nn.ConvTranspose1d(self.D * unfold_kernel_size, self.D, kernel_size=unfold_kernel_size),
-        )
-        self.time_pathway = nn.Sequential(
-            nn.Unfold(kernel_size=(1, unfold_kernel_size)),
-            SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True),
-            # Transpose convolution to restore shape
-            nn.ConvTranspose1d(self.D * unfold_kernel_size, self.D, kernel_size=unfold_kernel_size),
-        )
+        self.unfold = nn.Unfold(kernel_size=(1, unfold_kernel_size))
+        
+        self.freq_sru = SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True)
+        self.time_sru = SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True)
+        
+        self.freq_tconv = nn.ConvTranspose1d(2 * sru_hidden_size, self.D, kernel_size=unfold_kernel_size)
+        self.time_tconv = nn.ConvTranspose1d(2 * sru_hidden_size, self.D, kernel_size=unfold_kernel_size)
 
         # Full-band self-attention block
         self.attn = TFSelfAttention(channels=self.D, freqencies=freqencies, num_heads=attention_heads)
@@ -78,18 +73,29 @@ class RTFSBlock(nn.Module):
         ag: (B, D, T', F') compressed multi-scale aggregate.
         Return restored (B,D,T',F').
         """
-        # Frequency pathway
         B, D, T, F = ag.shape
-        freq_out = self.freq_pathway(ag)  # (B, D, T, F)
-        freq_out = freq_out + ag  # Residual
+        
+        # Frequency pathway - process along frequency dimension
+        x = ag.transpose(1, 2).contiguous().view(-1, D, F)
+        x = self.unfold(x[..., None])
+        x = x.permute(2, 0, 1).contiguous()
+        x, _ = self.freq_sru(x)
+        x = x.permute(1, 2, 0).contiguous()
+        x = self.freq_tconv(x)
+        freq_out = x.view(B, T, D, F).transpose(1, 2)
+        freq_out = freq_out + ag
 
-        freq_out = freq_out.transpose(1, 2).contiguous()
+        # Time pathway - process along time dimension
+        x = freq_out.permute(0, 3, 1, 2).contiguous().view(-1, D, T)
+        x = self.unfold(x[..., None])
+        x = x.permute(2, 0, 1).contiguous()
+        x, _ = self.time_sru(x)
+        x = x.permute(1, 2, 0).contiguous()
+        x = self.time_tconv(x)
+        time_out = x.view(B, F, D, T).permute(0, 2, 3, 1)
+        time_out = time_out + freq_out
 
-        # Time pathway
-        time_out = self.time_pathway(ag)  # (B, D, T, F)
-        time_out = time_out + freq_out  # Residual
-
-        return time_out 
+        return time_out
 
     def forward(self, A: torch.Tensor) -> torch.Tensor:
         """

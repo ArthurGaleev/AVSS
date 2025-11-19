@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import torch
 
 from src.logger.utils import plot_spectrogram
 from src.metrics.tracker import MetricTracker
@@ -31,6 +32,13 @@ class Trainer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform),
                 model outputs, and losses.
         """
+        if "mouth_save_path" in batch:
+            batch["mouth_embedds"] = torch.stack(
+                [
+                    torch.load(Path(path), map_location=self.device)
+                    for path in batch["mouth_save_path"]
+                ]
+            )
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
         batch.update(self.transform_batch(self.get_spectrogram(batch)))

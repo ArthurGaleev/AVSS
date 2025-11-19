@@ -83,10 +83,10 @@ class BaseDataset(Dataset):
             data_dict["audio_path_second"]
         ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
-        if "mouth_save_path" in data_dict:
-            mouth_save_path = Path(data_dict["mouth_save_path"])
-            assert mouth_save_path.exists()
-            data_dict["mouth_embedds"] = torch.load(mouth_save_path, map_location="cpu")
+        # if "mouth_save_path" in data_dict:
+        #     mouth_save_path = Path(data_dict["mouth_save_path"])
+        #     assert mouth_save_path.exists()
+        #     data_dict["mouth_embedds"] = torch.load(mouth_save_path, map_location="cpu")
         data_dict = self.preprocess_data(data_dict)  # use only wave augs
         return data_dict
 

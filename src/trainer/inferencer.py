@@ -120,11 +120,13 @@ class Inferencer(BaseTrainer):
         """
         # TODO change inference logic so it suits ASR assignment
         # and task pipeline
-        # if "mouth_save_path" in batch:
-        #     batch["mouth_embedds"]=torch.stack([torch.load(
-        #             Path(path),  map_location=self.device
-        #         ) for path in batch["mouth_save_path"]
-        #     ])
+        if "mouth_save_path" in batch:
+            batch["mouth_embedds"] = torch.stack(
+                [
+                    torch.load(Path(path), map_location=self.device)
+                    for path in batch["mouth_save_path"]
+                ]
+            )
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
         batch.update(self.transform_batch(self.get_spectrogram(batch)))

@@ -4,7 +4,6 @@ from hydra.utils import instantiate
 
 from src.datasets.collate import collate_fn
 from src.utils.init_utils import set_worker_seed
-from src.utils.lipreading.load_model import load_lipreading_model
 
 
 def inf_loop(dataloader):
@@ -63,22 +62,13 @@ def get_dataloaders(config, device):
     batch_transforms = instantiate(config.transforms.batch_transforms)
     move_transforms_to_device(batch_transforms, device)
 
-    # load pre-trained model for video embedds
-    if config.trainer.lipreading_model_name:
-        lipreading_model = load_lipreading_model(
-            model_name=config.trainer.lipreading_model_name,
-            device=device,
-        )
-    else:
-        lipreading_model = None
-
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
         # dataset partition init
         dataset = instantiate(
             config.datasets[dataset_partition],
-            lipreading_model=lipreading_model,
+            lipreading_model_name=config.trainer.lipreading_model_name,
             device=device,
         )  # instance transforms are defined inside
 

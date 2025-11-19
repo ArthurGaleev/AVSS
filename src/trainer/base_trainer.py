@@ -58,8 +58,6 @@ class BaseTrainer:
             batch_transforms (dict[Callable] | None): transforms that
                 should be applied on the whole batch. Depend on the
                 tensor name.
-            lipreading_model (nn.Module): Pytorch lipreading model for video
-                moddality.
         """
         self.is_train = True
 

@@ -96,7 +96,7 @@ class BaseDataset(Dataset):
             data_dict["audio_path_second"]
         ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
-        if self.lip_reading_model is not None:
+        if self.lipreading_model is not None:
             preprocessing_func = get_preprocessing_pipeline()
             with torch.no_grad():
                 load_dir = ROOT_PATH / "data/saved/mouth_embs"

@@ -1,10 +1,10 @@
 import torch
 
 from src.metrics.base_metric import BaseMetric
-from src.metrics.utils import si_sdr, si_sdr_i
+from src.metrics.utils import si_snr, si_snr_i
 
 
-class SiSdr(BaseMetric):
+class SiSnr(BaseMetric):
     def __init__(self, compare="first", improved: bool = True, *args, **kwargs):
         assert compare in [
             "first",
@@ -18,8 +18,8 @@ class SiSdr(BaseMetric):
         self.improved = improved
 
         self.metric_fn = {
-            True: si_sdr_i,
-            False: lambda est, target, _: si_sdr(est, target),
+            True: si_snr_i,
+            False: lambda est, target, _: si_snr(est, target),
         }[self.improved]
 
     def __call__(

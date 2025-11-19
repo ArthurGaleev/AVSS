@@ -1,23 +1,27 @@
 train: [] # metrics that are calculated during training
 inference: # metrics that are calculated during inference (eval)
-  # - _target_: src.metrics.SiSnri
+  # - _target_: src.metrics.SiSnr
   #   name: "SiSnr_first"
   #   compare: "first"
-  # - _target_: src.metrics.SiSnri
+  #   improved: true
+  # - _target_: src.metrics.SiSnr
   #   name: "SiSnr_second"
   #   compare: "second"
+  #   improved: true
   #compare results for first and second wav
-  - _target_: src.metrics.SiSnri
+  - _target_: src.metrics.SiSnr
     name: "SiSnri"
     compare: "average"
+    improved: true
   - _target_: src.metrics.SiSdr
-    name: "SiSdr"
+    name: "SiSdri"
     compare: "average"
-  - _target_: src.metrics.Pesq
-    name: "Pesq"
-    compare: "average"
-    sample_rate: ${sample_rate}
-  - _target_: src.metrics.Stoi
-    name: "Stoi"
-    compare: "average"
-    sample_rate: ${sample_rate}
+    improved: true
+  # - _target_: src.metrics.Pesq
+  #   name: "Pesq"
+  #   compare: "average"
+  #   sample_rate: ${sample_rate}
+  # - _target_: src.metrics.Stoi
+  #   name: "Stoi"
+  #   compare: "average"
+  #   sample_rate: ${sample_rate} Calculate on inference only because too long

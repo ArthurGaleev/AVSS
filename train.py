@@ -7,7 +7,12 @@ from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
-from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+from src.utils.init_utils import (
+    select_most_suitable_gpu,
+    set_random_seed,
+    setup_saving_and_logging,
+)
+from src.utils.torch_utils import set_tf32_allowance
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -22,22 +27,30 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
-    set_random_seed(config.trainer.seed)
+    set_random_seed(
+        config.trainer.seed, config.trainer.get("save_reproducibility", True)
+    )
+    set_tf32_allowance(config.trainer.get("tf32_allowance", False))
 
     project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
 
-    if config.trainer.device == "auto":
+    device = config.trainer.device
+    if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
-    else:
-        device = config.trainer.device
+    if device == "cuda":
+        device, free_memories = select_most_suitable_gpu()
+        logger.info(f"Using GPU: {device} with {free_memories / 1024 ** 3:.2f} GB free")
+
     # setup data_loader instances
     # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
+    if config.trainer.parallel:
+        model = torch.nn.DataParallel(model)
     logger.info(model)
 
     # get function handles of loss and metrics
@@ -64,6 +77,7 @@ def main(config):
         lr_scheduler=lr_scheduler,
         config=config,
         device=device,
+        dtype=config.trainer.get("dtype", "float32"),
         dataloaders=dataloaders,
         epoch_len=epoch_len,
         logger=logger,

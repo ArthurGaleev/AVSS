@@ -1,6 +1,7 @@
 import logging
 import random
 from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -27,6 +28,7 @@ class BaseDataset(Dataset):
         max_audio_length=None,
         shuffle_index=False,
         instance_transforms=None,
+        device=None,
     ):
         """
         Args:
@@ -42,7 +44,10 @@ class BaseDataset(Dataset):
             instance_transforms (dict[Callable] | None): transforms that
                 should be applied on the instance. Depend on the
                 tensor name.
+            lipreading_model (nn.Module): Pytorch lipreading model for video
+                moddality.
         """
+        assert device is not None
         self._assert_index_is_valid(index)
 
         index = self._filter_records_from_dataset(index, max_audio_length)
@@ -53,6 +58,7 @@ class BaseDataset(Dataset):
         self._index: list[dict] = index
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
+        self.device = device
 
     def __getitem__(self, ind):
         """
@@ -77,6 +83,10 @@ class BaseDataset(Dataset):
             data_dict["audio_path_second"]
         ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
+        # if "mouth_save_path" in data_dict:
+        #     mouth_save_path = Path(data_dict["mouth_save_path"])
+        #     assert mouth_save_path.exists()
+        #     data_dict["mouth_embedds"] = torch.load(mouth_save_path, map_location="cpu")
         data_dict = self.preprocess_data(data_dict)  # use only wave augs
         return data_dict
 

@@ -18,7 +18,7 @@ PRETRAINED_MODEL_LINKS = {
 }
 
 
-# default config
+# default config with extract_feats=True
 args = {
     "dataset": "lrw",
     "num_classes": 500,
@@ -48,7 +48,7 @@ args = {
     "model_path": None,
     "allow_size_mismatch": False,
     # feature extractor
-    "extract_feats": False,
+    "extract_feats": True,
     "mouth_patch_path": None,
     "mouth_embedding_out_path": None,
     # json pathname

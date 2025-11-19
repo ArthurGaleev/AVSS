@@ -23,7 +23,7 @@ class TransformSTFT(torch.nn.Module):
         assert (
             wav.shape[-1] % self.kwargs["hop_length"] == 0
         ), "Wav should have length that is divisable by hop length for STFT. Otherwise the shape wont be preserved"
-        window = torch.hann_window(self.kwargs["n_fft"])
+        window = torch.hann_window(self.kwargs["win_length"])
         stft_result = torch.stft(
             wav, window=window.to(wav.device), **self.kwargs, return_complex=True
         )
@@ -36,6 +36,6 @@ class TransformSTFT(torch.nn.Module):
             spec = spec.to(torch.complex64)
         return torch.istft(
             spec,
-            window=torch.hann_window(self.kwargs["n_fft"]).to(spec.device),
+            window=torch.hann_window(self.kwargs["win_length"]).to(spec.device),
             **self.kwargs,
         )

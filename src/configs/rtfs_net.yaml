@@ -1,31 +1,29 @@
 defaults:
-  - model: baseline
+  - model: rtfs
   - writer: wandb
   - metrics: all_metrics
   - datasets: yandex_disk
   - dataloader: train_val_dataloaders
-  - transforms: example
+  - transforms: rtfs
   - _self_
 optimizer:
   _target_: torch.optim.AdamW
   lr: 3e-4
 lr_scheduler:
-  _target_: torch.optim.lr_scheduler.OneCycleLR
-  max_lr: 1e-2
-  pct_start: 0.1
-  steps_per_epoch: ${trainer.epoch_len}
-  epochs: ${trainer.n_epochs}
-  anneal_strategy: cos
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: 10000
+  gamma: 0.98
 loss_function:
-  _target_: src.loss.SpectrogramMseLoss
+  _target_: src.loss.AudioSiSnr
 download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2
 sample_rate: 16000
+lipreading_model_name: null #need to specify from src/utils/lipreading/load_model.py
 trainer:
   log_step: 50
-  n_epochs: 3
-  epoch_len: 20
+  n_epochs: 200
+  epoch_len: null
   device_tensors: ["audio_first", "audio_second", "audio_mix"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"

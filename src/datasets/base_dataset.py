@@ -96,18 +96,22 @@ class BaseDataset(Dataset):
             data_dict["audio_path_second"]
         ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
+        print(self.lip_reading_model)
         if self.lip_reading_model is not None:
             preprocessing_func = get_preprocessing_pipeline()
-            mouth_data = preprocessing_func(np.load(data_dict["mouth_path"])["data"])
-            load_dir = ROOT_PATH / "data/saved/mouth_embs"
-            load_dir.mkdir(exist_ok=True, parents=True)
-            mouth_save_path = load_dir / (f"mouth_emb_{ind}.pth")
             with torch.no_grad():
+                load_dir = ROOT_PATH / "data/saved/mouth_embs"
+                print(load_dir)
+                load_dir.mkdir(exist_ok=True, parents=True)
+                mouth_save_path = load_dir / (f"mouth_emb_{ind}.pth")
                 if mouth_save_path.exists():
                     data_dict["mouth_embedds"] = torch.load(
                         mouth_save_path, map_location=self.lipreading_model.device
                     )
                 else:
+                    mouth_data = preprocessing_func(
+                        np.load(data_dict["mouth_path"])["data"]
+                    )
                     data_dict["mouth_embedds"] = self.lipreading_model(
                         torch.FloatTensor(mouth_data)[None, None, :, :, :].to(
                             self.lipreading_model.device

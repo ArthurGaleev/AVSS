@@ -71,7 +71,7 @@ class BaseDataset(Dataset):
             )
         else:
             lipreading_model = None
-        self.lip_reading_model = lipreading_model
+        self.lipreading_model = lipreading_model
 
     def __getitem__(self, ind):
         """
@@ -96,12 +96,10 @@ class BaseDataset(Dataset):
             data_dict["audio_path_second"]
         ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
-        print(self.lip_reading_model)
         if self.lip_reading_model is not None:
             preprocessing_func = get_preprocessing_pipeline()
             with torch.no_grad():
                 load_dir = ROOT_PATH / "data/saved/mouth_embs"
-                print(load_dir)
                 load_dir.mkdir(exist_ok=True, parents=True)
                 mouth_save_path = load_dir / (f"mouth_emb_{ind}.pth")
                 if mouth_save_path.exists():

@@ -1,6 +1,7 @@
 import io
 import os
 import zipfile
+from pathlib import Path
 from urllib.parse import urlencode
 
 import requests
@@ -53,6 +54,8 @@ class YandexDownload(CustomDirAudioDataset):
                 zip = zipfile.ZipFile(io.BytesIO(download_response.content))
                 zip.extractall(data_dir)
             data_dir = data_dir / download_name
+        else:
+            data_dir = Path(data_dir)
         super().__init__(
             data_dir / "audio" / part / "mix",
             data_dir / "audio" / part / "s1",

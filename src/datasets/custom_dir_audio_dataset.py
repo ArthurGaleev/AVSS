@@ -38,6 +38,10 @@ class CustomDirAudioDataset(BaseDataset):
                     assert mix_length == first_length == second_length
 
                     if mouths_dir:
+                        assert (
+                            self.lipreading_model
+                        ), "Need to initialize pre-trained lipreading model for embedds extraction"
+
                         first_mouth_path, second_mouth_path = path.stem.split("_")
 
                         first_mouth_path = mouths_dir / (first_mouth_path + ".npz")
@@ -56,22 +60,24 @@ class CustomDirAudioDataset(BaseDataset):
                                 np.load(second_mouth_path)["data"]
                             )
 
-                        entry["mouth_embedds"] = (
-                            self.lipreading_model(
-                                torch.FloatTensor(mouth_data)[None, None, :, :, :].to(
-                                    self.device
-                                ),
-                                lengths=[mouth_data.shape[0]],
-                            )
-                            .squeeze(1)
-                            .cpu()
-                        )  # TODO cpu?
+                        with torch.no_grad():
+                            entry["mouth_embedds"] = (
+                                self.lipreading_model(
+                                    torch.FloatTensor(mouth_data)[
+                                        None, None, :, :, :
+                                    ].to(self.device),
+                                    lengths=[mouth_data.shape[0]],
+                                )
+                                .squeeze(0)
+                                .cpu()  # TODO cpu?
+                            )  # (T, H*W) shape, e.g. (50, 1024)
 
             if len(entry) > 0:
                 data.append(entry)
 
-        if mouths_dir and self.lipreading_model:
-            del self.lipreading_model
+        # delete unnecessary model and empty cache
+        if self.lipreading_model:
+            del self.lipreading_model  # TODO correct?
             torch.cuda.empty_cache()
 
         super().__init__(data, *args, **kwargs)

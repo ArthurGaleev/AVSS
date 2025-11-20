@@ -37,6 +37,7 @@ class RTFSModel(nn.Module):
         rtfs_sru_hidden_size: int = 128,
         rtfs_attention_heads: int = 4,
         rtfs_tfar_units: int = 2,
+        reuse_rtfs_blocks: bool = True,
         # STFT parameters
         stft_n_fft: int = 512,
         stft_win_length: int = 400,
@@ -119,7 +120,7 @@ class RTFSModel(nn.Module):
                     sru_num_layers=4,
                     attention_heads=rtfs_attention_heads,
                     freqencies=stft_n_fft // 2 + 1,
-                )
+                ) if not reuse_rtfs_blocks else self.ap_block
                 for _ in range(num_rtfs_blocks)
             ]
         )

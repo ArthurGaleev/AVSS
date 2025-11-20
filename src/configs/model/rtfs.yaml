@@ -17,6 +17,7 @@ rtfs_num_scales: 3
 rtfs_sru_hidden_size: 128
 rtfs_attention_heads: 4
 rtfs_tfar_units: 2
+reuse_rtfs_blocks: false
 
 # STFT parameters
 stft_n_fft: 512

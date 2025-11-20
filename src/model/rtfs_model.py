@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import List, Optional
 
 import torch
 from torch import nn
+from torchvision.transforms.v2 import Transform
 
 from src.model.rtfs_parts import (
     RTFSAudioEncoder,
@@ -43,6 +44,7 @@ class RTFSModel(nn.Module):
         stft_win_length: int = 400,
         stft_hop_length: int = 160,
         sample_rate: int = 16000,
+        transforms: List[Transform] | None = None,
     ):
         """
         Args:
@@ -76,8 +78,8 @@ class RTFSModel(nn.Module):
             window_len=stft_win_length,
             hop_len=stft_hop_length,
             sample_rate=sample_rate,
+            transforms=transforms,
         )
-
         # Audio TF encoder/decoder around the RTFS blocks
         self.audio_encoder = RTFSAudioEncoder(
             out_channels=tf_channels,

@@ -48,12 +48,10 @@ class Trainer(BaseTrainer):
             )
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
-        batch.update(self.transform_batch(self.get_spectrogram(batch)))
         if self.is_train and zero_grad:
             self.optimizer.zero_grad()
         outputs = self.model(**batch)
         batch.update(outputs)
-        batch.update(self.reconstruct_wav(batch))
         self.rename_wav(batch)
         all_losses = self.criterion(**batch)
         batch.update(all_losses)

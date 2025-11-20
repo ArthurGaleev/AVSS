@@ -1,3 +1,11 @@
-train: null
+train:
+  spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.spec_augs.MaskFreq
+        F: 27
+      - _target_: src.transforms.spec_augs.TimeMask
+        ps: 0.05
+        num_masks: 10
 inference: null
 #change in model.baseline n_feats to n_fft//2+1 when using TransformFFt and to n_mels whrn using TransformMel

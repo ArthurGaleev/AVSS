@@ -1,4 +1,7 @@
+from typing import List
+
 import torch
+from torchvision.transforms.v2 import Transform
 
 
 class TransformSTFT(torch.nn.Module):
@@ -8,6 +11,7 @@ class TransformSTFT(torch.nn.Module):
         window_len,
         hop_len,
         sample_rate,
+        transforms: List[Transform] | None = None,
         *args,
         **kwargs,
     ):
@@ -18,6 +22,7 @@ class TransformSTFT(torch.nn.Module):
             "hop_length": hop_len,
         }
         self.sample_rate = sample_rate
+        self.transforms = transforms
 
     def get_spectrogram(self, wav):
         assert (
@@ -27,6 +32,8 @@ class TransformSTFT(torch.nn.Module):
         stft_result = torch.stft(
             wav, window=window.to(wav.device), **self.kwargs, return_complex=True
         )
+        if self.transforms is not None:
+            stft_result = self.transforms(stft_result)
         return stft_result.abs(), stft_result.angle()
 
     def reconstruct_wav(self, spec, phase=None):

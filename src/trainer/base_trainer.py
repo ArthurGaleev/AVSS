@@ -367,31 +367,6 @@ class BaseTrainer:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 
-    def get_spectrogram(self, batch):
-        new_data = {}
-        transform_type = "train" if self.is_train else "inference"
-        transforms = self.batch_transforms.get(transform_type)
-        if transforms is not None and "transfrom_spec_wav" in transforms.keys():
-            for key in ["audio_first", "audio_second", "audio_mix"]:
-                spec, phase = transforms["transfrom_spec_wav"].get_spectrogram(
-                    batch[key]
-                )
-                new_data[f"spectrogram_{key.split("_")[1]}"] = spec
-                if key == "audio_mix":
-                    new_data["phase_mix"] = phase
-        return new_data
-
-    def reconstruct_wav(self, batch):
-        new_data = {}
-        transform_type = "train" if self.is_train else "inference"
-        transforms = self.batch_transforms.get(transform_type)
-        if transforms is not None and "transfrom_spec_wav" in transforms.keys():
-            for key in ["spectrogram_first", "spectrogram_second"]:
-                new_data[f"audio_pred_{key.split("_")[1]}"] = transforms[
-                    "transfrom_spec_wav"
-                ].reconstruct_wav(batch[key], batch.get("phase_mix"))
-        return new_data
-
     def rename_wav(self, batch):
         if "audio_s0" in batch:
             batch["audio_pred_first"] = batch.pop("audio_s0")

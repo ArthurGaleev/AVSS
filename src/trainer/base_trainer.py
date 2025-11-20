@@ -392,6 +392,12 @@ class BaseTrainer:
                 ].reconstruct_wav(batch[key], batch.get("phase_mix"))
         return new_data
 
+    def rename_wav(self, batch):
+        if "audio_s0" in batch:
+            batch["audio_pred_first"] = batch.pop("audio_s0")
+        if "audio_s1" in batch:
+            batch["audio_pred_second"] = batch.pop("audio_s1")
+
     def transform_batch(self, batch):
         """
         Transforms elements in batch. Like instance transform inside the

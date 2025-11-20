@@ -54,6 +54,7 @@ class Trainer(BaseTrainer):
         outputs = self.model(**batch)
         batch.update(outputs)
         batch.update(self.reconstruct_wav(batch))
+        self.rename_wav(batch)
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
 

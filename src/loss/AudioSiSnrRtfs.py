@@ -6,12 +6,12 @@ from torch import Tensor
 from src.metrics.si_snr import SiSnr
 
 
-class AudioSiSnr(torch.nn.Module):
+class AudioSiSnrRTFS(torch.nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.metric = SiSnr(
-            compare="average", improved=False, use_pit=True
+            improved=False, use_pit=False
         )  # Avoid calculating constant term
 
     def forward(

@@ -140,6 +140,7 @@ class Inferencer(BaseTrainer):
         outputs = self.model(**batch)
         batch.update(outputs)
         batch.update(self.reconstruct_wav(batch))
+        self.rename_wav(batch)
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))

@@ -14,7 +14,7 @@ lr_scheduler:
   _target_: torch.optim.lr_scheduler.CosineAnnealingLR
   T_max: ${trainer.n_epochs}
 loss_function:
-  _target_: src.loss.AudioSiSnr
+  _target_: src.loss.AudioSiSnrRTFS
 download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2

@@ -97,12 +97,12 @@ class RTFSModel(nn.Module):
         if use_video:
             # Project raw video embeddings (B, T_v, D_v) -> (B, C_v, T_v)
             self.vp_block = VPEncoder(
-                in_channels=tf_channels,
+                in_channels=encoder_channels,
                 compressed_channels=rtfs_compressed_channels,
                 num_scales=rtfs_num_scales,
             )
             self.caf_block = RTFSCAFBlock(
-                visual_channels=tf_channels,
+                visual_channels=encoder_channels,
                 audio_channels=tf_channels,
                 num_heads=rtfs_attention_heads,
             )

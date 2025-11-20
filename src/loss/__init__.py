@@ -1,9 +1,6 @@
 from src.loss.AudioMSELoss import AudioMseLoss
 from src.loss.AudioSiSnr import AudioSiSnr
+from src.loss.AudioSiSnrRtfs import AudioSiSnrRTFS
 from src.loss.SpectrogramMseLoss import SpectrogramMseLoss
 
-__all__ = [
-    "AudioMseLoss",
-    "AudioSiSnr",
-    "SpectrogramMseLoss",
-]
+__all__ = ["AudioMseLoss", "AudioSiSnr", "SpectrogramMseLoss", "AudioSiSnrRTFS"]

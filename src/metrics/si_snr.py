@@ -5,7 +5,14 @@ from src.metrics.utils import si_snr, si_snr_i
 
 
 class SiSnr(BaseMetric):
-    def __init__(self, compare="first", improved: bool = True, *args, **kwargs):
+    def __init__(
+        self,
+        compare="first",
+        improved: bool = True,
+        use_pit: bool = True,
+        *args,
+        **kwargs,
+    ):
         assert compare in [
             "first",
             "second",
@@ -16,7 +23,7 @@ class SiSnr(BaseMetric):
 
         self.compare = compare
         self.improved = improved
-
+        self.use_pit = use_pit
         self.metric_fn = {
             True: si_snr_i,
             False: lambda est, target, _: si_snr(est, target),
@@ -41,7 +48,9 @@ class SiSnr(BaseMetric):
         if self.compare in ["second", "average"]:
             loss1 += self.metric_fn(audio_pred_second, audio_second, audio_mix)
             loss2 += self.metric_fn(audio_pred_first, audio_second, audio_mix)
-        result = torch.max(loss1, loss2).mean()
-
+        if self.use_pit:
+            result = torch.max(loss1, loss2).mean()
+        else:
+            result = loss1.mean()
         norm_coeff = 2 if self.compare == "average" else 1
         return result / norm_coeff

@@ -127,7 +127,7 @@ class RTFSModel(nn.Module):
         # Separator: final 1D separation in encoder latent space.
         # We disable video fusion inside RTFSSeparator if CAF is used
         # to avoid duplicating fusion mechanisms.
-        self.separator = RTFSSeparator(channels=encoder_channels)
+        self.separator = RTFSSeparator(channels=tf_channels)
 
         self.audio_decoder = RTFSDecoder(in_channels=tf_channels)
 

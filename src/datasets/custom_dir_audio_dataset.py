@@ -40,21 +40,20 @@ class CustomDirAudioDataset(BaseDataset):
                 t_info = torchaudio.info(str(path))
                 mix_length = t_info.num_frames / t_info.sample_rate
                 entry["audio_len"] = mix_length
-                switch = False
                 if audio_first_dir is not None and audio_second_dir is not None:
                     if mouths_dir:
                         assert Path(mouths_dir).exists(), "Mouths dir doesnt exist"
                         first_mouth_path, second_mouth_path = path.stem.split("_")
-                        first_mouth_path = mouths_dir / (first_mouth_path + ".npz")
-                        second_mouth_path = mouths_dir / (second_mouth_path + ".npz")
-                        if first_mouth_path.exists():
-                            entry["mouth_path"] = first_mouth_path
-                        else:
-                            switch = True
-                            assert (
-                                second_mouth_path.exists()
-                            ), "One of the mouths should exist"
-                            entry["mouth_path"] = second_mouth_path
+                        entry["mouth_path_first"] = mouths_dir / (
+                            first_mouth_path + ".npz"
+                        )
+                        entry["mouth_path_second"] = mouths_dir / (
+                            second_mouth_path + ".npz"
+                        )
+                        assert (
+                            entry["mouth_path_first"].exists()
+                            and entry["mouth_path_second"].exists()
+                        )
                         if lipreading_model is not None:
                             with torch.no_grad():
                                 load_dir = (
@@ -63,30 +62,31 @@ class CustomDirAudioDataset(BaseDataset):
                                     / lipreading_model_name
                                 )
                                 load_dir.mkdir(exist_ok=True, parents=True)
-                                mouth_save_path = load_dir / (
-                                    f"mouth_emb_{entry["mouth_path"].stem}.pth"
+                                entry["mouth_emb_path_first"] = load_dir / (
+                                    f"mouth_emb_{entry["mouth_path_first"].stem}.pth"
                                 )
-                                if not mouth_save_path.exists():
-                                    mouth_data = preprocessing_func(
-                                        np.load(entry["mouth_path"])["data"]
-                                    )
-                                    mouth_embed = lipreading_model(
-                                        torch.FloatTensor(mouth_data)[
-                                            None, None, :, :, :
-                                        ].to(device),
-                                        lengths=[mouth_data.shape[0]],
-                                    ).squeeze(
-                                        0
-                                    )  # (T, H*W) shape, e.g. (50, 1024)
-                                    torch.save(mouth_embed, mouth_save_path)
-                                entry["mouth_save_path"] = mouth_save_path
+                                entry["mouth_emb_path_second"] = load_dir / (
+                                    f"mouth_emb_{entry["mouth_path_second"].stem}.pth"
+                                )
+                                for mouth_name, mouth_emb_name in [
+                                    ("mouth_path_first", "mouth_emb_path_first"),
+                                    ("mouth_path_second", "mouth_emb_path_second"),
+                                ]:
+                                    if not entry[mouth_emb_name].exists():
+                                        mouth_data = preprocessing_func(
+                                            np.load(entry[mouth_name])["data"]
+                                        )
+                                        mouth_embed = lipreading_model(
+                                            torch.FloatTensor(mouth_data)[
+                                                None, None, :, :, :
+                                            ].to(device),
+                                            lengths=[mouth_data.shape[0]],
+                                        ).squeeze(
+                                            0
+                                        )  # (T, H*W) shape, e.g. (50, 1024)
+                                        torch.save(mouth_embed, entry[mouth_emb_name])
                         entry["audio_path_first"] = str(audio_first_dir / path.name)
                         entry["audio_path_second"] = str(audio_second_dir / path.name)
-                        if switch:
-                            entry["audio_path_first"], entry["audio_path_second"] = (
-                                entry["audio_path_second"],
-                                entry["audio_path_first"],
-                            )
                         t_info = torchaudio.info(str(audio_first_dir / path.name))
                         first_length = t_info.num_frames / t_info.sample_rate
                         t_info = torchaudio.info(str(audio_second_dir / path.name))

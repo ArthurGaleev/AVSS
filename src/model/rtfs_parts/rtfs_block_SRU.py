@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from sru import SRU
 
 from src.model.rtfs_parts.layers import (
     CompressorBlock,
@@ -62,13 +63,13 @@ class RTFSBlock(nn.Module):
         # SRU stacks for dual-path on compressed channels D
         self.unfold = nn.Unfold(kernel_size=(unfold_kernel_size, 1))
 
-        self.freq_sru = nn.LSTM(
+        self.freq_sru = SRU(
             self.D * unfold_kernel_size,
             sru_hidden_size,
             num_layers=sru_num_layers,
             bidirectional=True,
         )
-        self.time_sru = nn.LSTM(
+        self.time_sru = SRU(
             self.D * unfold_kernel_size,
             sru_hidden_size,
             num_layers=sru_num_layers,

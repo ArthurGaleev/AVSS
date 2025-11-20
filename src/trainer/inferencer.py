@@ -120,11 +120,18 @@ class Inferencer(BaseTrainer):
         """
         # TODO change inference logic so it suits ASR assignment
         # and task pipeline
-        if "mouth_save_path" in batch:
+        if "mouth_emb_path_first" in batch and "mouth_emb_path_second" in batch:
             batch["video_embeddings"] = torch.stack(
                 [
-                    torch.load(Path(path), map_location=self.device)
-                    for path in batch["mouth_save_path"]
+                    torch.stack(
+                        [
+                            torch.load(Path(path_first), map_location=self.device),
+                            torch.load(Path(path_second), map_location=self.device),
+                        ]
+                    )
+                    for path_first, path_second in zip(
+                        batch["mouth_emb_path_first"], batch["mouth_emb_path_second"]
+                    )
                 ]
             )
         batch = self.move_batch_to_device(batch)

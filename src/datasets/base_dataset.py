@@ -192,6 +192,12 @@ class BaseDataset(Dataset):
             ), (
                 "Each dataset item should include field 'path'" " - path to audio file."
             )
+            assert (
+                "mouth_emb_path_first" in entry
+                and "mouth_emb_path_second" in entry
+                and "mouth_path_first" in entry
+                and "mouth_path_second" in entry
+            ), "Each dataset item should include fields with mouth paths and emb path"
             assert "audio_len" in entry, (
                 "Each dataset item should include field 'audio_len'"
                 " - length of the audio."

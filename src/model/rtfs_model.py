@@ -3,15 +3,21 @@ from typing import Optional
 import torch
 from torch import nn
 
+from src.model.rtfs_parts import (
+    RTFSAudioEncoder,
+    RTFSBlock,
+    RTFSCAFBlock,
+    RTFSDecoder,
+    RTFSSeparator,
+    VPEncoder,
+)
 from src.transforms.stft_transfrom import TransformSTFT
-
-from src.model.rtfs_parts import RTFSSeparator, RTFSDecoder, RTFSAudioEncoder, RTFSBlock, RTFSCAFBlock, VPEncoder
 
 
 class RTFSModel(nn.Module):
     """
     Real-Time Full-band Speech Separation Model.
-    
+
     The model consists of:
     - Encoder: converts audio to learned representations
     - Separator: processes representations with optional video guidance
@@ -55,7 +61,7 @@ class RTFSModel(nn.Module):
             sample_rate: audio sample rate
         """
         super().__init__()
-        
+
         self.n_speakers = n_speakers
         self.use_video = use_video
 
@@ -117,24 +123,24 @@ class RTFSModel(nn.Module):
                 for _ in range(num_rtfs_blocks)
             ]
         )
-        
+
         # Separator: final 1D separation in encoder latent space.
         # We disable video fusion inside RTFSSeparator if CAF is used
         # to avoid duplicating fusion mechanisms.
         self.separator = RTFSSeparator(channels=encoder_channels)
-        
+
         self.audio_decoder = RTFSDecoder(in_channels=tf_channels)
 
     def forward(
-            self,
-            audio_mix: torch.Tensor,
-            video_embeddings: Optional[torch.Tensor] = None,
-            **batch
-        ):
+        self,
+        audio_mix: torch.Tensor,
+        video_embeddings: Optional[torch.Tensor] = None,
+        **batch,
+    ):
         """
         Args:
             audio_mix: mixed audio waveform, shape (B, T)
-            video_embeddings: video features corresponding to the target speaker, 
+            video_embeddings: video features corresponding to the target speaker,
                             shape (B, S, D_v, T_v) or None
             **batch: other data in the batch
         Returns:
@@ -144,9 +150,11 @@ class RTFSModel(nn.Module):
 
         # Prepare visual features if available and fuse with audio
         if self.use_video:
-            B, S, _, _ = video_embeddings.shape
+            B, S, D_v, T_v = video_embeddings.shape
 
-            video_embeddings = video_embeddings.squeeze(1)  # (B * S, D_v, T_v)
+            video_embeddings = video_embeddings.view(
+                B * S, D_v, T_v
+            )  # (B * S, D_v, T_v)
             v_1 = self.vp_block(video_embeddings)  # (B * S, D_v, T_v)
 
             _, D_v, T_v = v_1.shape
@@ -155,7 +163,9 @@ class RTFSModel(nn.Module):
             v_1 = None
 
         for speaker_idx in range(self.n_speakers):
-            stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(audio_mix)
+            stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(
+                audio_mix
+            )
 
             # Encode audio mixture to latent space
             # stft_audio_magnitude, stft_audio_phase: (B, T, F)
@@ -167,34 +177,38 @@ class RTFSModel(nn.Module):
 
             # Prepare visual features if available and fuse with audio
             if v_1 is not None:
-                tf_feats = self.caf_block(v_1[:, speaker_idx, :, :], a_1)  # (B, C_a, T_a, F_a)
+                tf_feats = self.caf_block(
+                    v_1[:, speaker_idx, :, :], a_1
+                )  # (B, C_a, T_a, F_a)
             else:
                 tf_feats = a_1
 
             # Apply RTFS TF blocks with residual connections
             for block in self.rtfs_blocks:
-                tf_feats = block(tf_feats) + a_0 # Residual connection
-            
+                tf_feats = block(tf_feats) + a_0  # Residual connection
+
             # Apply separator in latent space
             z = self.separator(tf_feats, a_0)  # (B, C_a, T_a, F_a)
 
             # Decode to separated audio features
             stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)  # (B, T, F)
 
-            wav = self.stft.reconstruct_wav(stft_audio_magnitude, stft_audio_phase)  # (B, T)
+            wav = self.stft.reconstruct_wav(
+                stft_audio_magnitude, stft_audio_phase
+            )  # (B, T)
             wav = self._match_length(wav, audio_mix.shape[-1])
 
             output[f"audio_s{speaker_idx}"] = wav
 
             # Remove speaker from mixture for next iteration
             audio_mix = audio_mix - wav
-        
+
         return output
-    
+
     def _match_length(self, audio: torch.Tensor, target_length: int) -> torch.Tensor:
         """
         Match audio length to target length by trimming or padding.
-        
+
         Args:
             audio: (B, T)
             target_length: target length
@@ -202,7 +216,7 @@ class RTFSModel(nn.Module):
             audio: (B, target_length)
         """
         current_length = audio.shape[-1]
-        
+
         if current_length == target_length:
             return audio
         elif current_length > target_length:

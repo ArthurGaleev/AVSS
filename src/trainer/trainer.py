@@ -33,7 +33,7 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         if "mouth_save_path" in batch:
-            batch["mouth_embedds"] = torch.stack(
+            batch["video_embeddings"] = torch.stack(
                 [
                     torch.load(Path(path), map_location=self.device)
                     for path in batch["mouth_save_path"]

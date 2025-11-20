@@ -121,7 +121,7 @@ class Inferencer(BaseTrainer):
         # TODO change inference logic so it suits ASR assignment
         # and task pipeline
         if "mouth_save_path" in batch:
-            batch["mouth_embedds"] = torch.stack(
+            batch["video_embeddings"] = torch.stack(
                 [
                     torch.load(Path(path), map_location=self.device)
                     for path in batch["mouth_save_path"]

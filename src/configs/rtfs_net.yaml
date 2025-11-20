@@ -19,7 +19,6 @@ download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2
 sample_rate: 16000
-lipreading_model_name: null #need to specify from src/utils/lipreading/load_model.py
 trainer:
   log_step: 50
   n_epochs: 200
@@ -35,4 +34,4 @@ trainer:
   dir_created: False
   parallel: False
   seed: 1
-  lipreading_model_name: "" # pretrained model from mpc001 repo (check src\utils\lipreading\load_model.py for the correct name)
+  lipreading_model_name: "resnet18_dctcn" # pretrained model from mpc001 repo (check src\utils\lipreading\load_model.py for the correct name)

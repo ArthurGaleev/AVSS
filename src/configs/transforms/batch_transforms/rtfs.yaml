@@ -1,19 +1,3 @@
-train:
-  transfrom_spec_wav: # special key for getting spectrogram
-    _target_: src.transforms.TransformFFT
-    n_fft: 512
-    hop_len: 160
-    window_len: 400
-    # n_mels: 80
-    # sample_rate: ${sample_rate}
-    power: 2
-inference:
-  transfrom_spec_wav: # special key for getting spectrogram
-    _target_: src.transforms.TransformFFT
-    n_fft: 512
-    hop_len: 160
-    window_len: 400
-    # n_mels: 80
-    # sample_rate: ${sample_rate}
-    power: 2
+train: null
+inference: null
 #change in model.baseline n_feats to n_fft//2+1 when using TransformFFt and to n_mels whrn using TransformMel

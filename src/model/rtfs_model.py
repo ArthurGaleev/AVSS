@@ -140,18 +140,10 @@ class RTFSModel(nn.Module):
         Returns:
             dict with keys "audio_s{i}" of shape (B, T) for each speaker i
         """
-        stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(audio_mix)
-
-        # Encode audio mixture to latent space
-        # stft_audio_magnitude, stft_audio_phase: (B, T, F)
-        a_0 = self.audio_encoder(
-            stft_audio_magnitude,
-            stft_audio_phase,
-        )  # (B, C_a, T_a, F_a)
-        a_1 = self.ap_block(a_0)  # (B, C_a, T_a, F_a)
+        output = {}
 
         # Prepare visual features if available and fuse with audio
-        if self.use_video and video_embeddings is not None:
+        if self.use_video:
             B, S, _, _ = video_embeddings.shape
 
             video_embeddings = video_embeddings.squeeze(1)  # (B * S, D_v, T_v)
@@ -162,9 +154,18 @@ class RTFSModel(nn.Module):
         else:
             v_1 = None
 
-        output = {}
-
         for speaker_idx in range(self.n_speakers):
+            stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(audio_mix)
+
+            # Encode audio mixture to latent space
+            # stft_audio_magnitude, stft_audio_phase: (B, T, F)
+            a_0 = self.audio_encoder(
+                stft_audio_magnitude,
+                stft_audio_phase,
+            )  # (B, C_a, T_a, F_a)
+            a_1 = self.ap_block(a_0)  # (B, C_a, T_a, F_a)
+
+            # Prepare visual features if available and fuse with audio
             if v_1 is not None:
                 tf_feats = self.caf_block(v_1[:, speaker_idx, :, :], a_1)  # (B, C_a, T_a, F_a)
             else:
@@ -186,7 +187,7 @@ class RTFSModel(nn.Module):
             output[f"audio_s{speaker_idx}"] = wav
 
             # Remove speaker from mixture for next iteration
-            a_1 = a_1 - wav
+            audio_mix = audio_mix - wav
         
         return output
     

@@ -89,9 +89,10 @@ class TFSelfAttention(nn.Module):
         attn_out = attn_out.view(B, self.num_heads, F, T, self.head_dim)  # (B,H,F,T,Dh)
         attn_out = self._merge_heads(attn_out)  # (B,D,F,T)
 
-        # Back to (B, D, T, F)
-        attn_out = attn_out.permute(0, 1, 3, 2)
-
         # Final projection
-        out = self.out_pathway(attn_out)  # (B, D, T, F)
+        out = self.out_pathway(attn_out)  # (B, D, F, T)
+
+        # Back to (B, D, T, F)
+        out = out.permute(0, 1, 3, 2)
+      
         return out

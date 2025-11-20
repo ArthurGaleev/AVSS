@@ -31,8 +31,7 @@ class TFARUnit(nn.Module):
                 in_channels,
                 in_channels,
                 kernel_size=4,
-                stride=2,
-                padding=1,
+                padding="same",
                 groups=in_channels,
             ),  # depthwise conv (same size)
             GlobalLayerNorm(in_channels),  # gLN
@@ -43,8 +42,7 @@ class TFARUnit(nn.Module):
                 in_channels,
                 in_channels,
                 kernel_size=4,
-                stride=2,
-                padding=1,
+                padding="same",
                 groups=in_channels,
             ),  # depthwise conv (same size)
             GlobalLayerNorm(in_channels),  # gLN
@@ -68,18 +66,18 @@ class TFARUnit(nn.Module):
         w3 = self.w3_pathway(n)  # (B, D, T_n, F_n)
 
         if self.dimensionality_type == "1D":
-            _, _, T_m = m.shape
+            _, _, T_m = w2.shape
             interpolate_shape = (T_m,)
         else:
-            _, _, T_m, F_m = m.shape
+            _, _, T_m, F_m = w2.shape
             interpolate_shape = (T_m, F_m)
 
         # Interpolate w1, w3 to m's size
         w1_up = functional.interpolate(
-            w1, size=interpolate_shape, mode="nearest", align_corners=False
+            w1, size=interpolate_shape, mode="nearest"
         )
         w3_up = functional.interpolate(
-            w3, size=interpolate_shape, mode="nearest", align_corners=False
+            w3, size=interpolate_shape, mode="nearest"
         )
         out = w1_up * w2 + w3_up
 
@@ -109,13 +107,13 @@ class ReconstructionBlock(nn.Module):
         self.residual_fuse_layers = nn.ModuleList()
 
         # Build TFAR units for each scale
-        for _ in range(upsample_units):
+        for _ in range(upsample_units + 1):
             # G-fuse: fuse this scale with the processed result (A_G has deepest_channels)
             self.g_fuse_layers.append(
                 TFARUnit(in_channels, dimensionality_type=dimensionality_type)
             )
 
-        for _ in range(upsample_units - 1):
+        for _ in range(upsample_units):
             # When reconstructing, we go from coarsest to finest
             self.residual_fuse_layers.append(
                 TFARUnit(in_channels, dimensionality_type=dimensionality_type)

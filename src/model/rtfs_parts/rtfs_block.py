@@ -57,7 +57,7 @@ class RTFSBlock(nn.Module):
         )
 
         # SRU stacks for dual-path on compressed channels D
-        self.unfold = nn.Unfold(kernel_size=(1, unfold_kernel_size))
+        self.unfold = nn.Unfold(kernel_size=(unfold_kernel_size, 1))
         
         self.freq_sru = SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True)
         self.time_sru = SRU(self.D * unfold_kernel_size, sru_hidden_size, num_layers=sru_num_layers, bidirectional=True)
@@ -66,7 +66,7 @@ class RTFSBlock(nn.Module):
         self.time_tconv = nn.ConvTranspose1d(2 * sru_hidden_size, self.D, kernel_size=unfold_kernel_size)
 
         # Full-band self-attention block
-        self.attn = TFSelfAttention(channels=self.D, freqencies=freqencies, num_heads=attention_heads)
+        self.attn = TFSelfAttention(channels=self.D, freqencies=freqencies // (2 ** downsample_units), num_heads=attention_heads)
 
     def _dual_path(self, ag: torch.Tensor) -> torch.Tensor:
         """
@@ -76,8 +76,8 @@ class RTFSBlock(nn.Module):
         B, D, T, F = ag.shape
         
         # Frequency pathway - process along frequency dimension
-        x = ag.transpose(1, 2).contiguous().view(-1, D, F)
-        x = self.unfold(x[..., None])
+        x = ag.transpose(1, 2).contiguous().view(-1, D, F, 1)
+        x = self.unfold(x)
         x = x.permute(2, 0, 1).contiguous()
         x, _ = self.freq_sru(x)
         x = x.permute(1, 2, 0).contiguous()
@@ -86,8 +86,8 @@ class RTFSBlock(nn.Module):
         freq_out = freq_out + ag
 
         # Time pathway - process along time dimension
-        x = freq_out.permute(0, 3, 1, 2).contiguous().view(-1, D, T)
-        x = self.unfold(x[..., None])
+        x = freq_out.permute(0, 3, 1, 2).contiguous().view(-1, D, T, 1)
+        x = self.unfold(x)
         x = x.permute(2, 0, 1).contiguous()
         x, _ = self.time_sru(x)
         x = x.permute(1, 2, 0).contiguous()

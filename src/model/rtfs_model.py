@@ -173,7 +173,7 @@ class RTFSModel(nn.Module):
             stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(
                 audio_mix
             )
-
+            audio_magnitude_copy = stft_audio_magnitude.clone()
             # Encode audio mixture to latent space
             # stft_audio_magnitude, stft_audio_phase: (B, T, F)
             a_0 = self.audio_encoder(
@@ -206,7 +206,8 @@ class RTFSModel(nn.Module):
             wav = self._match_length(wav, audio_mix.shape[-1])
 
             output[f"audio_s{speaker_idx}"] = wav
-            output[f"spectrogram_s{speaker_idx}"] = stft_audio_magnitude
+            output[f"spectrogram_s{speaker_idx}"] = audio_magnitude_copy
+            output[f"spectrogram_pred_s{speaker_idx}"] = stft_audio_magnitude
 
             # Remove speaker from mixture for next iteration
             audio_mix = audio_mix - wav

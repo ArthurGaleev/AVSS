@@ -376,6 +376,10 @@ class BaseTrainer:
             batch["spectrogram_first"] = batch.pop("spectrogram_s0")
         if "spectrogram_s1" in batch:
             batch["spectrogram_second"] = batch.pop("spectrogram_s1")
+        if "spectrogram_pred_s0" in batch:
+            batch["spectrogram_first"] = batch.pop("spectrogram_pred_s0")
+        if "spectrogram_pred_s1" in batch:
+            batch["spectrogram_pred_second"] = batch.pop("spectrogram_pred_s1")
 
     def transform_batch(self, batch):
         """

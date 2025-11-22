@@ -101,6 +101,8 @@ class Trainer(BaseTrainer):
             self.log_audio(batch["audio_first"], audio_name="audio_first")
             self.log_audio(batch["audio_second"], audio_name="audio_second")
             self.log_audio(batch["audio_mix"], audio_name="audio_mix")
+            self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
+            self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
             if "spectrogram_first" in batch:
                 self.log_spectrogram(
                     batch["spectrogram_first"], spectrogram_name="spectrogram_first"
@@ -113,8 +115,6 @@ class Trainer(BaseTrainer):
                 self.log_spectrogram(
                     batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
                 )
-            self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
-            self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
             if "spectrogram_pred_first" in batch:
                 self.log_spectrogram(
                     batch["spectrogram_pred_first"],

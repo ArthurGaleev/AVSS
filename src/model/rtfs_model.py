@@ -213,9 +213,7 @@ class RTFSModel(nn.Module):
 
         return output
 
-    def _matcall_metricsh_length(
-        self, audio: torch.Tensor, target_length: int
-    ) -> torch.Tensor:
+    def _match_length(self, audio: torch.Tensor, target_length: int) -> torch.Tensor:
         """
         Match audio length to target length by trimming or padding.
 

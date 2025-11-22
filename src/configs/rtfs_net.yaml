@@ -1,7 +1,7 @@
 defaults:
   - model: rtfs
   - writer: wandb
-  - metrics: all_metrics
+  - metrics: rtfs_training
   - datasets: yandex_disk
   - dataloader: train_val_dataloaders
   - transforms: rtfs

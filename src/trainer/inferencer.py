@@ -138,7 +138,7 @@ class Inferencer(BaseTrainer):
         batch = self.transform_batch(batch)  # transform batch on device -- faster
         outputs = self.model(**batch)
         batch.update(outputs)
-        self.rename_wav(batch)
+        self.rename_wav_spec(batch)
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))

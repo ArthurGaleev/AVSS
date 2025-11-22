@@ -367,11 +367,15 @@ class BaseTrainer:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 
-    def rename_wav(self, batch):
+    def rename_wav_spec(self, batch):
         if "audio_s0" in batch:
             batch["audio_pred_first"] = batch.pop("audio_s0")
         if "audio_s1" in batch:
             batch["audio_pred_second"] = batch.pop("audio_s1")
+        if "spectrogram_s0" in batch:
+            batch["spectrogram_first"] = batch.pop("spectrogram_s0")
+        if "spectrogram_s1" in batch:
+            batch["spectrogram_second"] = batch.pop("spectrogram_s1")
 
     def transform_batch(self, batch):
         """

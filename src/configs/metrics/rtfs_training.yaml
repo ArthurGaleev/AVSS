@@ -13,10 +13,12 @@ inference: # metrics that are calculated during inference (eval)
     name: "SiSnri"
     compare: "average"
     improved: true
+    use_pit: False
   - _target_: src.metrics.SiSdr
     name: "SiSdri"
     compare: "average"
     improved: true
+    use_pit: False
   # - _target_: src.metrics.Pesq
   #   name: "Pesq"
   #   compare: "average"

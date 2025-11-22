@@ -113,16 +113,20 @@ class RTFSModel(nn.Module):
         # RTFS blocks operating on (B, C_tf, T, F)
         self.rtfs_blocks = nn.ModuleList(
             [
-                RTFSBlock(
-                    in_channels=tf_channels,
-                    compressed_channels=rtfs_compressed_channels,
-                    downsample_units=rtfs_tfar_units,
-                    unfold_kernel_size=8,
-                    sru_hidden_size=rtfs_sru_hidden_size,
-                    sru_num_layers=4,
-                    attention_heads=rtfs_attention_heads,
-                    freqencies=stft_n_fft // 2 + 1,
-                ) if not reuse_rtfs_blocks else self.ap_block
+                (
+                    RTFSBlock(
+                        in_channels=tf_channels,
+                        compressed_channels=rtfs_compressed_channels,
+                        downsample_units=rtfs_tfar_units,
+                        unfold_kernel_size=8,
+                        sru_hidden_size=rtfs_sru_hidden_size,
+                        sru_num_layers=4,
+                        attention_heads=rtfs_attention_heads,
+                        freqencies=stft_n_fft // 2 + 1,
+                    )
+                    if not reuse_rtfs_blocks
+                    else self.ap_block
+                )
                 for _ in range(num_rtfs_blocks)
             ]
         )
@@ -202,13 +206,16 @@ class RTFSModel(nn.Module):
             wav = self._match_length(wav, audio_mix.shape[-1])
 
             output[f"audio_s{speaker_idx}"] = wav
+            output[f"spectrogram_s{speaker_idx}"] = stft_audio_magnitude
 
             # Remove speaker from mixture for next iteration
             audio_mix = audio_mix - wav
 
         return output
 
-    def _match_length(self, audio: torch.Tensor, target_length: int) -> torch.Tensor:
+    def _matcall_metricsh_length(
+        self, audio: torch.Tensor, target_length: int
+    ) -> torch.Tensor:
         """
         Match audio length to target length by trimming or padding.
 

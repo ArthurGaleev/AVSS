@@ -52,7 +52,7 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
         outputs = self.model(**batch)
         batch.update(outputs)
-        self.rename_wav(batch)
+        self.rename_wav_spec(batch)
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
@@ -101,25 +101,30 @@ class Trainer(BaseTrainer):
             self.log_audio(batch["audio_first"], audio_name="audio_first")
             self.log_audio(batch["audio_second"], audio_name="audio_second")
             self.log_audio(batch["audio_mix"], audio_name="audio_mix")
-            # self.log_spectrogram(
-            #     batch["spectrogram_first"], spectrogram_name="spectrogram_first"
-            # )
-            # self.log_spectrogram(
-            #     batch["spectrogram_second"], spectrogram_name="spectrogram_second"
-            # )
-            # self.log_spectrogram(
-            #     batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
-            # )
+            if "spectrogram_first" in batch:
+                self.log_spectrogram(
+                    batch["spectrogram_first"], spectrogram_name="spectrogram_first"
+                )
+            if "spectrogram_second" in batch:
+                self.log_spectrogram(
+                    batch["spectrogram_second"], spectrogram_name="spectrogram_second"
+                )
+            if "spectrogram_mix" in batch:
+                self.log_spectrogram(
+                    batch["spectrogram_mix"], spectrogram_name="spectrogram_mix"
+                )
             self.log_audio(batch["audio_pred_second"], audio_name="audio_pred_second")
             self.log_audio(batch["audio_pred_first"], audio_name="audio_pred_first")
-            # self.log_spectrogram(
-            #     batch["spectrogram_pred_first"],
-            #     spectrogram_name="spectrogram_pred_first",
-            # )
-            # self.log_spectrogram(
-            #     batch["spectrogram_pred_second"],
-            #     spectrogram_name="spectrogram_pred_second",
-            # )
+            if "spectrogram_pred_first" in batch:
+                self.log_spectrogram(
+                    batch["spectrogram_pred_first"],
+                    spectrogram_name="spectrogram_pred_first",
+                )
+            if "spectrogram_pred_second" in batch:
+                self.log_spectrogram(
+                    batch["spectrogram_pred_second"],
+                    spectrogram_name="spectrogram_pred_second",
+                )
         else:
             # Log Stuff
             self.log_audio(batch["audio_first"], audio_name="audio_first")

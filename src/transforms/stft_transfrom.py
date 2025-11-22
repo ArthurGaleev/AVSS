@@ -33,7 +33,7 @@ class TransformSTFT(torch.nn.Module):
             wav, window=window.to(wav.device), **self.kwargs, return_complex=True
         )
         if self.transforms is not None:
-            stft_result = self.transforms(stft_result)
+            return self.transforms(stft_result.abs()), stft_result.angle()
         return stft_result.abs(), stft_result.angle()
 
     def reconstruct_wav(self, spec, phase=None):

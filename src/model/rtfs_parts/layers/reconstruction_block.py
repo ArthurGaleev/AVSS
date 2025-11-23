@@ -9,13 +9,22 @@ from src.model.rtfs_parts.layers.normalization import GlobalLayerNorm
 
 class TFARUnit(nn.Module):
     """
-    Temporal-Frequency Attention Reconstruction (simplified).
-    Implements I(m,n) combining two context inputs via learned gates.
+    Temporal-Frequency Attention Reconstruction (TFAR) Unit.
+
+    Implements adaptive gating for multi-scale feature fusion using learned gates.
+    Combines two context inputs: m (finer) and n (coarser) via learned gate functions.
     """
 
     def __init__(
         self, in_channels: int, dimensionality_type: Literal["2D", "1D"] = "2D"
     ):
+        """
+        Initialize TFAR unit.
+
+        Args:
+            in_channels: Channel dimension.
+            dimensionality_type: '2D' for (T, F) or '1D' for (T,) features (default: '2D').
+        """
         super().__init__()
 
         self.in_channels = in_channels
@@ -33,8 +42,8 @@ class TFARUnit(nn.Module):
                 kernel_size=4,
                 padding="same",
                 groups=in_channels,
-            ),  # depthwise conv (same size)
-            GlobalLayerNorm(in_channels),  # gLN
+            ),
+            GlobalLayerNorm(in_channels),
             nn.Sigmoid(),
         )
         self.w2_pathway = nn.Sequential(
@@ -44,26 +53,30 @@ class TFARUnit(nn.Module):
                 kernel_size=4,
                 padding="same",
                 groups=in_channels,
-            ),  # depthwise conv (same size)
-            GlobalLayerNorm(in_channels),  # gLN
+            ),
+            GlobalLayerNorm(in_channels),
         )
         self.w3_pathway = nn.Sequential(
             conv_class(
                 in_channels, in_channels, kernel_size=3, padding=1, groups=in_channels
-            ),  # depthwise conv (same size)
-            GlobalLayerNorm(in_channels),  # gLN
+            ),
+            GlobalLayerNorm(in_channels),
         )
 
     def forward(self, m: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
         """
-        m: (B, D, T_m, F_m)
-        n: (B, D, T_n, F_n)
-        Returns: (B, D, T_m, F_m)
-        """
+        Apply TFAR gating to combine two features.
 
-        w1 = self.w1_pathway(n)  # (B, D, T_n, F_n)
-        w2 = self.w2_pathway(m)  # (B, D, T_m, F_m)
-        w3 = self.w3_pathway(n)  # (B, D, T_n, F_n)
+        Args:
+            m: Finer scale features of shape (B, D, T_m, F_m) or (B, D, T_m).
+            n: Coarser scale features of shape (B, D, T_n, F_n) or (B, D, T_n).
+
+        Returns:
+            Gated fusion of shape (B, D, T_m, F_m) or (B, D, T_m).
+        """
+        w1 = self.w1_pathway(n)
+        w2 = self.w2_pathway(m)
+        w3 = self.w3_pathway(n)
 
         if self.dimensionality_type == "1D":
             _, _, T_m = w2.shape
@@ -72,13 +85,8 @@ class TFARUnit(nn.Module):
             _, _, T_m, F_m = w2.shape
             interpolate_shape = (T_m, F_m)
 
-        # Interpolate w1, w3 to m's size
-        w1_up = functional.interpolate(
-            w1, size=interpolate_shape, mode="nearest"
-        )
-        w3_up = functional.interpolate(
-            w3, size=interpolate_shape, mode="nearest"
-        )
+        w1_up = functional.interpolate(w1, size=interpolate_shape, mode="nearest")
+        w3_up = functional.interpolate(w3, size=interpolate_shape, mode="nearest")
         out = w1_up * w2 + w3_up
 
         return out
@@ -86,7 +94,10 @@ class TFARUnit(nn.Module):
 
 class ReconstructionBlock(nn.Module):
     """
-    Simple reconstruction block using depthwise separable convolutions.
+    Multi-scale Reconstructor: upsamples features and fuses multi-scale information.
+
+    Progressively reconstructs features from coarsest to finest scale using
+    TFAR units for gated fusion with skip connections from compression stages.
     """
 
     def __init__(
@@ -96,6 +107,15 @@ class ReconstructionBlock(nn.Module):
         upsample_units: int = 2,
         dimensionality_type: Literal["2D", "1D"] = "2D",
     ):
+        """
+        Initialize reconstruction block.
+
+        Args:
+            in_channels: Compressed channel dimension (D).
+            out_channels: Output channel dimension (C_in).
+            upsample_units: Number of upsampling scales (default: 2).
+            dimensionality_type: '2D' for (T, F) or '1D' for (T,) features (default: '2D').
+        """
         super().__init__()
 
         self.in_channels = in_channels
@@ -106,7 +126,6 @@ class ReconstructionBlock(nn.Module):
         self.g_fuse_layers = nn.ModuleList()
         self.residual_fuse_layers = nn.ModuleList()
 
-        # Build TFAR units for each scale
         for _ in range(upsample_units + 1):
             # G-fuse: fuse this scale with the processed result (A_G has deepest_channels)
             self.g_fuse_layers.append(
@@ -126,21 +145,24 @@ class ReconstructionBlock(nn.Module):
 
         self.dimension_upsampling_layer = conv_class(
             in_channels, out_channels, kernel_size=1
-        )  # Restore to original channels
+        )
 
     def forward(self, A_i: List[torch.Tensor], A_G: torch.Tensor) -> torch.Tensor:
         """
-        A_i: List of multi-scale features [(B, D, T_0, F_0), (B, D, T_1, F_1), ..., (B, D, T_q, F_q)] (from compressor)
-        A_G: (B, D, T_q, F_q) - processed feature from dual-path + attention
-        Returns: (B, out_channels, T_0, F_0) - reconstructed feature at original resolution
+        Reconstruct features from multi-scale compressed representation.
+
+        Args:
+            A_i: List of multi-scale features from compressor at each scale.
+            A_G: Processed coarse features from dual-path + attention.
+
+        Returns:
+            Reconstructed features at original resolution of shape (B, C_out, T_0, F_0).
         """
-        # First, fuse all multi-scale features with A_G
         A_prime = []
         for layer, A in zip(self.g_fuse_layers, A_i):
             A_prime.append(layer(A, A_G))
 
-        # Start reconstruction from the coarsest scale
-        x = A_prime[-1]  # (B, D, T_q, F_q) after TFAR with A_G
+        x = A_prime[-1]
 
         # Progressively upsample and fuse with finer scales
         for layer, A_finer, A_q in zip(
@@ -153,6 +175,5 @@ class ReconstructionBlock(nn.Module):
             # Fuse current result with next finer scale
             x = layer(A_finer, x) + A_q
 
-        # Final projection to restore original channel dimension
-        x = self.dimension_upsampling_layer(x)  # (B, out_channels, T_0, F_0)
+        x = self.dimension_upsampling_layer(x)
         return x

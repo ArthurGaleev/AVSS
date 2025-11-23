@@ -19,10 +19,14 @@ class RTFSModel(nn.Module):
     """
     Real-Time Full-band Speech Separation Model.
 
-    The model consists of:
-    - Encoder: converts audio to learned representations
-    - Separator: processes representations with optional video guidance
-    - Decoder: reconstructs separated audio
+    Implements RTFS-Net architecture for speaker separation. The model:
+    1. Encodes mixed audio spectrogram to latent representation via STFT and audio encoder
+    2. Optionally processes video embeddings and fuses with audio via CAF blocks
+    3. Applies stacked RTFS blocks for audio-visual feature refinement
+    4. Separates speakers using learnable masks in latent space
+    5. Decodes separated features back to time-domain waveforms
+
+    Reference: https://arxiv.org/abs/2309.17189
     """
 
     def __init__(
@@ -46,20 +50,24 @@ class RTFSModel(nn.Module):
         transforms: List[Transform] | None = None,
     ):
         """
+        Initialize RTFS-Net model.
+
         Args:
-            n_speakers: number of speakers to separate
-            encoder_channels: number of channels in encoder output
-            use_video: whether to use video embeddings
-            tf_channels: number of channels in TF encoder/decoder
-            num_rtfs_blocks: number of RTFS blocks to use
-            rtfs_compressed_channels: number of compressed channels in RTFS blocks
-            rtfs_sru_hidden_size: hidden size for SRU in RTFS blocks
-            rtfs_attention_heads: number of attention heads in RTFS blocks
-            rtfs_tfar_units: number of TF-AR reconstruction units in RTFS blocks
-            stft_n_fft: number of FFT points for STFT
-            stft_win_length: window length for STFT
-            stft_hop_length: hop length for STFT
-            sample_rate: audio sample rate
+            n_speakers: Number of speakers to separate (default: 2).
+            encoder_channels: Dimension of video/auxiliary embeddings (default: 256).
+            use_video: Whether to use video embeddings for audio-visual fusion (default: True).
+            tf_channels: Number of channels in time-frequency domain (C_a) (default: 256).
+            num_rtfs_blocks: Number of stacked RTFS blocks (default: 2).
+            rtfs_compressed_channels: Channel dimension after compression (D) (default: 128).
+            rtfs_sru_hidden_size: Hidden state size for SRU in RTFS blocks (default: 128).
+            rtfs_attention_heads: Number of multi-head attention heads (default: 4).
+            rtfs_tfar_units: Number of TF-AR reconstruction scales (default: 2).
+            reuse_rtfs_blocks: Whether to reuse weights across RTFS blocks (default: True).
+            stft_n_fft: FFT size for STFT transform (default: 512).
+            stft_win_length: Window length for STFT (default: 400).
+            stft_hop_length: Hop length for STFT (default: 160).
+            sample_rate: Audio sample rate in Hz (default: 16000).
+            transforms: Optional list of spectral augmentations (default: None).
         """
         super().__init__()
 
@@ -78,7 +86,6 @@ class RTFSModel(nn.Module):
             sample_rate=sample_rate,
             transforms=transforms,
         )
-        # Audio TF encoder/decoder around the RTFS blocks
         self.audio_encoder = RTFSAudioEncoder(
             out_channels=tf_channels,
         )
@@ -94,9 +101,7 @@ class RTFSModel(nn.Module):
             freqencies=stft_n_fft // 2 + 1,
         )
 
-        # Visual projection + CAF blocks (optional)
         if use_video:
-            # Project raw video embeddings (B, T_v, D_v) -> (B, C_v, T_v)
             self.vp_block = VPEncoder(
                 in_channels=encoder_channels,
                 compressed_channels=rtfs_compressed_channels,
@@ -108,8 +113,6 @@ class RTFSModel(nn.Module):
                 audio_channels=tf_channels,
                 num_heads=rtfs_attention_heads,
             )
-
-        # RTFS blocks operating on (B, C_tf, T, F)
         self.rtfs_blocks = nn.ModuleList(
             [
                 (
@@ -130,11 +133,7 @@ class RTFSModel(nn.Module):
             ]
         )
 
-        # Separator: final 1D separation in encoder latent space.
-        # We disable video fusion inside RTFSSeparator if CAF is used
-        # to avoid duplicating fusion mechanisms.
         self.separator = RTFSSeparator(channels=tf_channels)
-
         self.audio_decoder = RTFSDecoder(in_channels=tf_channels)
 
     def forward(
@@ -144,64 +143,54 @@ class RTFSModel(nn.Module):
         **batch,
     ):
         """
+        Separate mixed audio into multiple speakers with optional video guidance.
+
         Args:
-            audio_mix: mixed audio waveform, shape (B, T)
-            video_embeddings: video features corresponding to the target speaker,
-                            shape (B, S, D_v, T_v) or None
-            **batch: other data in the batch
+            audio_mix: Mixed audio waveform of shape (B, T_audio).
+            video_embeddings: Video embeddings for each speaker of shape (B, S, C_v, T_video),
+                or None if audio-only separation (default: None).
+            **batch: Additional batch data (unused).
+
         Returns:
-            dict with keys "audio_s{i}" of shape (B, T) for each speaker i
+            Dictionary containing:
+                - audio_s{i}: Separated waveform for speaker i, shape (B, T_audio)
+                - spectrogram_s{i}: Input spectrogram magnitude, shape (B, T_spec, F)
+                - spectrogram_pred_s{i}: Predicted magnitude for speaker i, shape (B, T_spec, F)
         """
         output = {}
 
         # Prepare visual features if available and fuse with audio
         if self.use_video:
             B, S, D_v, T_v = video_embeddings.shape
+            video_embeddings = video_embeddings.view(B * S, D_v, T_v)
 
-            video_embeddings = video_embeddings.view(
-                B * S, D_v, T_v
-            )  # (B * S, D_v, T_v)
-            v_1 = self.vp_block(video_embeddings)  # (B * S, D_v, T_v)
-
+            v_1 = self.vp_block(video_embeddings)
+            
             _, D_v, T_v = v_1.shape
             v_1 = v_1.reshape(B, S, D_v, T_v)
         else:
             v_1 = None
 
         for speaker_idx in range(self.n_speakers):
-            stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(
-                audio_mix
-            )
+            stft_audio_magnitude, stft_audio_phase = self.stft.get_spectrogram(audio_mix)
             output[f"spectrogram_s{speaker_idx}"] = stft_audio_magnitude
-            # Encode audio mixture to latent space
-            # stft_audio_magnitude, stft_audio_phase: (B, T, F)
-            a_0 = self.audio_encoder(
-                stft_audio_magnitude,
-                stft_audio_phase,
-            )  # (B, C_a, T_a, F_a)
-            a_1 = self.ap_block(a_0)  # (B, C_a, T_a, F_a)
 
-            # Prepare visual features if available and fuse with audio
+            a_0 = self.audio_encoder(stft_audio_magnitude, stft_audio_phase)
+            a_1 = self.ap_block(a_0)
+            
             if v_1 is not None:
-                tf_feats = self.caf_block(
-                    v_1[:, speaker_idx, :, :], a_1
-                )  # (B, C_a, T_a, F_a)
+                tf_feats = self.caf_block(v_1[:, speaker_idx, :, :], a_1)
             else:
                 tf_feats = a_1
 
-            # Apply RTFS TF blocks with residual connections
             for block in self.rtfs_blocks:
-                tf_feats = block(tf_feats) + a_0  # Residual connection
+                tf_feats = block(tf_feats) + a_0
 
-            # Apply separator in latent space
-            z = self.separator(tf_feats, a_0)  # (B, C_a, T_a, F_a)
-
-            # Decode to separated audio features
-            stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)  # (B, T, F)
-
-            wav = self.stft.reconstruct_wav(
-                stft_audio_magnitude, stft_audio_phase
-            )  # (B, T)
+            z = self.separator(tf_feats, a_0)
+            
+            stft_audio_magnitude, stft_audio_phase = self.audio_decoder(z)
+            
+            wav = self.stft.reconstruct_wav(stft_audio_magnitude, stft_audio_phase)
             wav = self._match_length(wav, audio_mix.shape[-1])
 
             output[f"audio_s{speaker_idx}"] = wav
@@ -214,13 +203,14 @@ class RTFSModel(nn.Module):
 
     def _match_length(self, audio: torch.Tensor, target_length: int) -> torch.Tensor:
         """
-        Match audio length to target length by trimming or padding.
+        Match audio length to target by trimming or zero-padding.
 
         Args:
-            audio: (B, T)
-            target_length: target length
+            audio: Audio waveform of shape (B, T).
+            target_length: Target length in samples.
+
         Returns:
-            audio: (B, target_length)
+            Audio waveform of shape (B, target_length).
         """
         current_length = audio.shape[-1]
 
@@ -229,7 +219,6 @@ class RTFSModel(nn.Module):
         elif current_length > target_length:
             return audio[..., :target_length]
         else:
-            # Pad with zeros
             padding = target_length - current_length
             return torch.nn.functional.pad(audio, (0, padding))
 

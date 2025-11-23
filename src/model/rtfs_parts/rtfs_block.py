@@ -10,17 +10,17 @@ from src.model.rtfs_parts.layers import (
 
 class RTFSBlock(nn.Module):
     """
-    RTFS Block (simplified implementation of paper description).
+    RTFS Block: Time-Frequency feature processor with dual-path architecture.
 
-    Steps:
-      1. Compress channels C_a -> D via 1x1 conv.
-      2. Multi-scale feature generation (adaptive pooling).
-      3. Dual-path processing: frequency then time with SRU layers.
-      4. Self-attention over TF plane.
-      5. TF-AR reconstruction units (multi-scale upsampling with U-Net style skips).
-      6. Project back to C_a.
+    Implements the core processing block of RTFS-Net with:
+    1. Channel compression C_a -> D via 1x1 convolution
+    2. Multi-scale feature generation using adaptive pooling
+    3. Dual-path processing: frequency pathway followed by time pathway (using SRU)
+    4. Self-attention across the time-frequency plane
+    5. Multi-scale reconstruction with U-Net style skip connections (TF-AR units)
+    6. Channel restoration D -> C_a via 1x1 convolution
 
-    See https://arxiv.org/abs/2309.17189 for reference.
+    Reference: https://arxiv.org/abs/2309.17189
     """
 
     def __init__(
@@ -34,6 +34,19 @@ class RTFSBlock(nn.Module):
         attention_heads: int = 4,
         freqencies: int = 257,
     ):
+        """
+        Initialize RTFS Block.
+
+        Args:
+            in_channels: Input channel dimension (C_a).
+            compressed_channels: Channel dimension after compression (D).
+            downsample_units: Number of downsampling scales in compressor (default: 2).
+            unfold_kernel_size: Kernel size for unfolding in dual-path (default: 8).
+            sru_hidden_size: Hidden state dimension for SRU layers (default: 128).
+            sru_num_layers: Number of SRU layers (default: 4).
+            attention_heads: Number of multi-head attention heads (default: 4).
+            freqencies: Number of frequency bins before compression (F) (default: 257).
+        """
         super().__init__()
 
         self.in_channels = in_channels
@@ -89,22 +102,27 @@ class RTFSBlock(nn.Module):
             num_heads=attention_heads,
         )
 
-    def _dual_path(self, ag: torch.Tensor) -> torch.Tensor:
+    def _dual_path(self, aggrigated: torch.Tensor) -> torch.Tensor:
         """
-        ag: (B, D, T', F') compressed multi-scale aggregate.
-        Return restored (B,D,T',F').
+        Dual-path feature processing: frequency pathway followed by time pathway.
+
+        Args:
+            aggrigated: Compressed multi-scale aggregate of shape (B, D, T_down, F_down).
+
+        Returns:
+            Processed features of shape (B, D, T_down, F_down) with residual connections.
         """
-        B, D, T, F = ag.shape
+        B, D, T, F = aggrigated.shape
 
         # Frequency pathway - process along frequency dimension
-        x = ag.transpose(1, 2).contiguous().view(-1, D, F, 1)
+        x = aggrigated.transpose(1, 2).contiguous().view(-1, D, F, 1)
         x = self.unfold(x)
         x = x.permute(2, 0, 1).contiguous()
         x, _ = self.freq_sru(x)
         x = x.permute(1, 2, 0).contiguous()
         x = self.freq_tconv(x)
         freq_out = x.view(B, T, D, F).transpose(1, 2)
-        freq_out = freq_out + ag
+        freq_out = freq_out + aggrigated
 
         # Time pathway - process along time dimension
         x = freq_out.permute(0, 3, 1, 2).contiguous().view(-1, D, T, 1)
@@ -120,18 +138,19 @@ class RTFSBlock(nn.Module):
 
     def forward(self, A: torch.Tensor) -> torch.Tensor:
         """
-        A: (B, C_a, T, F)
-        Returns: (B, C_a, T, F)
+        Process audio features through RTFS block.
+
+        Args:
+            A: Audio features of shape (B, C_a, T, F).
+
+        Returns:
+            Processed features of shape (B, C_a, T, F).
         """
-        # Compress and multi-scale feature generation
         xs, x = self.compressor(A)
 
-        # Dual-path + attention
         dp = self._dual_path(x)
-        # TF-domain self-attention over the dual-path output
         dp = self.attn(dp) + dp
 
-        # TF-AR reconstruction
-        out = self.reconstructor(xs, dp)  # (B,C_a,T,F)
+        out = self.reconstructor(xs, dp)
 
         return out

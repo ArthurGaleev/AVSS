@@ -7,9 +7,22 @@ import torch.nn.functional as functional
 
 class CompressorBlock(nn.Module):
     """
-    Simple compressor block using depthwise separable convolutions.
+    Multi-scale Compressor: downsamples features and generates multi-scale representation.
+
+    Compresses channel and spatial dimensions via depthwise separable convolutions
+    while maintaining multi-scale features for later reconstruction with skip connections.
     """
     def __init__(self, in_channels: int, out_channels: int, downsample_units: int = 2, downsample_factor: int = 2, dimensionality_type: Literal['2D', '1D'] = '2D'):
+        """
+        Initialize compressor block.
+
+        Args:
+            in_channels: Input channel dimension.
+            out_channels: Output channel dimension (D).
+            downsample_units: Number of downsampling scales (default: 2).
+            downsample_factor: Downsampling factor per unit (default: 2).
+            dimensionality_type: '2D' for (T, F) or '1D' for (T,) features (default: '2D').
+        """
         super().__init__()
 
         self.in_channels = in_channels
@@ -23,20 +36,27 @@ class CompressorBlock(nn.Module):
             '1D': nn.Conv1d,
         }[dimensionality_type]
 
-        self.dimension_compression_layer = conv_class(in_channels, out_channels, kernel_size=1) # Compress to shape (B,D,T,F), where D < C_a
+        self.dimension_compression_layer = conv_class(in_channels, out_channels, kernel_size=1)
         
         compression_layers = []
         for _ in range(downsample_units):
             compression_layers.append(
                 conv_class(out_channels, out_channels, kernel_size=4, stride=downsample_factor, padding=1, groups=out_channels)
-            ) # Depthwise conv for local feature extraction
+            )
 
         self.tf_compression_layers = nn.Sequential(*compression_layers)
 
     def forward(self, x: torch.Tensor) -> tuple[List[torch.Tensor], torch.Tensor]:
         """
-        x: (B, C_a, T, F) or (B, C_a, T) for 1D
-        Returns: Tuple[List of multi-scale features [(B, D, T_i, F_i), ...] or [(B, D, T_i), ...], Aggregated feature (B, D, T_q, F_q) or (B, D, T_q)]
+        Compress features and generate multi-scale representation.
+
+        Args:
+            x: Input features of shape (B, C_in, T, F) for 2D or (B, C_in, T) for 1D.
+
+        Returns:
+            Tuple of (list of multi-scale features, aggregated final feature):
+                - Multi-scale: list of features at each compression level
+                - Aggregated: sum of all features pooled to finest resolution
         """
         x = self.dimension_compression_layer(x)
         

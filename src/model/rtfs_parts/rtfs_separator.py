@@ -4,8 +4,10 @@ from torch import nn
 
 class RTFSSeparator(nn.Module):
     """
-    Separator network for RTFS model.
-    Processes latent representations with optional video guidance to produce separation masks.
+    RTFS Separator: produces speaker separation masks in latent space.
+
+    Processes intermediate features to generate complex-valued masks that
+    separate speakers by learning phase and magnitude transformations.
     """
 
     def __init__(
@@ -13,8 +15,10 @@ class RTFSSeparator(nn.Module):
         channels: int,
     ):
         """
+        Initialize separator.
+
         Args:
-            channels: number of channels
+            channels: Channel dimension (C_a).
         """
         super().__init__()
         
@@ -30,19 +34,23 @@ class RTFSSeparator(nn.Module):
         a_0: torch.Tensor,
     ) -> torch.Tensor:
         """
+        Separate speakers via complex-valued mask multiplication.
+
         Args:
-            a_R: (B, C_a, T, F) intermediate representation
-            a_0: (B, C_a, T, F) original encoded features
+            a_R: Intermediate representation of shape (B, C_a, T, F).
+            a_0: Original encoded features of shape (B, C_a, T, F).
+
         Returns:
-            output: (B, C_a, T, F)
+            Separated features of shape (B, C_a, T, F).
         """
-        m = self.mask_pathway(a_R) # (B, C_a, T, F)
+        m = self.mask_pathway(a_R)
 
-        m_r, m_i = torch.chunk(m, 2, dim=1)  # (B, C_a/2, T, F) each
-        E_r, E_i = torch.chunk(a_0, 2, dim=1)  # (B, C_a/2, T, F) each
+        m_r, m_i = torch.chunk(m, 2, dim=1)
+        E_r, E_i = torch.chunk(a_0, 2, dim=1)
 
-        z_r = m_r * E_r - m_i * E_i  # (B, C_a/2, T, F)
-        z_i = m_r * E_i + m_i * E_r  # (B, C_a/2, T, F)
+        z_r = m_r * E_r - m_i * E_i
+        z_i = m_r * E_i + m_i * E_r
 
-        output = torch.cat((z_r, z_i), dim=1)  # (B, C_a, T, F)
+        output = torch.cat((z_r, z_i), dim=1)
+        
         return output

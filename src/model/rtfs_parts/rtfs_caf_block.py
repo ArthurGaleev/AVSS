@@ -7,8 +7,12 @@ from src.model.rtfs_parts.layers import GlobalLayerNorm
 
 class RTFSCAFBlock(nn.Module):
     """
-    Cross-dimensional Attention Fusion Block.
-    Fuses visual and auditory embeddings using attention and gated fusion mechanisms.
+    Cross-dimensional Audio-Visual Fusion Block.
+
+    Fuses visual and auditory embeddings using dual mechanisms:
+    1. Attention Fusion (F1): weighting audio features by visual attention
+    2. Gated Fusion (F2): gating audio by visual features
+    Output is the sum of both fusion pathways for complementary audio-visual integration.
     """
 
     def __init__(
@@ -81,41 +85,39 @@ class RTFSCAFBlock(nn.Module):
         auditory_embedding: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Forward pass of the RTFS CAF Block.
+        Fuse audio-visual embeddings using attention and gated mechanisms.
+
         Args:
-            visual_embedding (torch.Tensor): Visual embedding tensor of shape (B, C_a, T_v).
-            auditory_embedding (torch.Tensor): Auditory embedding tensor of shape (B, C_a, T_a, F).
+            visual_embedding: Visual features of shape (B, C_v, T_v).
+            auditory_embedding: Audio features of shape (B, C_a, T_a, F).
+
         Returns:
-            torch.Tensor: Fused auditory embedding of shape (B, C_a, T_a, F).
+            Fused audio-visual features of shape (B, C_a, T_a, F).
         """
         _, _, T_a, _ = auditory_embedding.shape
         _, _, T_v = visual_embedding.shape
 
         # ===== Attention Fusion (F1) =====
-        a_val = self.audio_attention_pathway(auditory_embedding)  # (B, C_a, T_a, F)
-        v_attn = self.visual_attention_pathway(visual_embedding)  # (B, C_a, T_v)
+        a_val = self.audio_attention_pathway(auditory_embedding)
+        v_attn = self.visual_attention_pathway(visual_embedding)
 
-        # align T_v with T_a using interpolation)
         if T_v != T_a:
-            v_attn_aligned = functional.interpolate(v_attn, size=T_a, mode='nearest')  # (B, C_a, T_a)
+            v_attn_aligned = functional.interpolate(v_attn, size=T_a, mode='nearest')
         else:
             v_attn_aligned = v_attn
 
-        f_1 = a_val * v_attn_aligned.unsqueeze(-1)  # (B, C_a, T_a, F)
+        f_1 = a_val * v_attn_aligned.unsqueeze(-1)
 
         # ===== Gated Fusion (F2) =====
-        a_gate = self.audio_gated_pathway(auditory_embedding)  # (B, C_a, T_a, F)
-        v_key = self.visual_gated_pathway(visual_embedding)  # (B, C_a, T_v)
+        a_gate = self.audio_gated_pathway(auditory_embedding)
+        v_key = self.visual_gated_pathway(visual_embedding)
         
-        # align T_v with T_a using interpolation)
         if T_v != T_a:
-            v_key_aligned = functional.interpolate(v_key, size=T_a, mode='nearest')  # (B, C_a, T_a)
+            v_key_aligned = functional.interpolate(v_key, size=T_a, mode='nearest')
         else:
             v_key_aligned = v_key
+        f_2 = a_gate * v_key_aligned.unsqueeze(-1)
 
-        f_2 = a_gate * v_key_aligned.unsqueeze(-1)  # (B, C_a, T_a, F)
-        
-        # Sum the two fused features
-        a_2 = f_1 + f_2  # (B, C_a, T_a, F)
+        a_2 = f_1 + f_2
 
         return a_2

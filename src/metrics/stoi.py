@@ -31,8 +31,11 @@ class Stoi(BaseMetric):
         audio_mix,
         **batch,
     ):
+        audio_first = audio_first.to(audio_pred_first.device)
+        audio_second = audio_second.to(audio_pred_second.device)
+
         batch_size = audio_first.shape[0]
-        loss1, loss2 = torch.zeros(batch_size, device=audio_first.device), torch.zeros(
+        loss1, loss2 = torch.zeros(batch_size, device=audio_pred_first.device), torch.zeros(
             batch_size, device=audio_first.device
         )
         if self.use_pit:

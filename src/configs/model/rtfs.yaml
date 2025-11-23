@@ -23,4 +23,4 @@ stft_n_fft: 512
 stft_win_length: 400
 stft_hop_length: 160
 sample_rate: 16000
-transforms: ${transforms.batch_transforms.train.spectrogram}
+transforms: null

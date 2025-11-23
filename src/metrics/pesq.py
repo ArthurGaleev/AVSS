@@ -33,17 +33,17 @@ class Pesq(BaseMetric):
         )
         if self.use_pit:
             if self.compare in ["first", "average"]:
-                loss1 += self.metric_fn(audio_pred_first, audio_first, audio_mix)
-                loss2 += self.metric_fn(audio_pred_second, audio_first, audio_mix)
+                loss1 += self.metric_fn(audio_pred_first, audio_first)
+                loss2 += self.metric_fn(audio_pred_second, audio_first)
             if self.compare in ["second", "average"]:
-                loss1 += self.metric_fn(audio_pred_second, audio_second, audio_mix)
-                loss2 += self.metric_fn(audio_pred_first, audio_second, audio_mix)
+                loss1 += self.metric_fn(audio_pred_second, audio_second)
+                loss2 += self.metric_fn(audio_pred_first, audio_second)
             result = torch.max(loss1, loss2).mean()
         else:
             if self.compare in ["first", "average"]:
-                loss1 += self.metric_fn(audio_pred_first, audio_first, audio_mix)
+                loss1 += self.metric_fn(audio_pred_first, audio_first)
             if self.compare in ["second", "average"]:
-                loss1 += self.metric_fn(audio_pred_second, audio_second, audio_mix)
+                loss1 += self.metric_fn(audio_pred_second, audio_second)
             result = loss1.mean()
         norm_coeff = 2 if self.compare == "average" else 1
         return result / norm_coeff

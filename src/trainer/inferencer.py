@@ -25,6 +25,7 @@ class Inferencer(BaseTrainer):
         save_path,
         metrics=None,
         batch_transforms=None,
+        enhancers=None,
         skip_model_load=False,
     ):
         """
@@ -44,6 +45,8 @@ class Inferencer(BaseTrainer):
             batch_transforms (dict[nn.Module] | None): transforms that
                 should be applied on the whole batch. Depend on the
                 tensor name.
+            enhancers (list[nn.Module] | None): enhancers that should be
+                applied on the model outputs.
             skip_model_load (bool): if False, require the user to set
                 pre-trained checkpoint path. Set this argument to True if
                 the model desirable weights are defined outside of the
@@ -77,6 +80,8 @@ class Inferencer(BaseTrainer):
             )
         else:
             self.evaluation_metrics = None
+
+        self.enhancers = enhancers
 
         if not skip_model_load:
             # init model
@@ -138,6 +143,7 @@ class Inferencer(BaseTrainer):
         batch = self.transform_batch(batch)  # transform batch on device -- faster
         outputs = self.model(**batch)
         batch.update(outputs)
+        self._apply_enhancers(batch)
         self.rename_wav_spec(batch)
         if metrics is not None:
             for met in self.metrics["inference"]:
@@ -146,6 +152,13 @@ class Inferencer(BaseTrainer):
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
         return batch
+    
+    def _apply_enhancers(self, model, batch):
+        if self.enhancers is None:
+            return {}
+        for enhancer in self.enhancers:
+            enh = enhancer(model=model, **batch)
+            batch.update(enh)
 
     def _inference_part(self, part, dataloader):
         """

@@ -57,10 +57,10 @@ class CustomDirAudioDataset(BaseDataset):
                             )
                             load_dir.mkdir(exist_ok=True, parents=True)
                             entry["mouth_emb_path_first"] = load_dir / (
-                                f"mouth_emb_{entry["mouth_path_first"].stem}.pth"
+                                f"mouth_emb_{entry['mouth_path_first'].stem}.pth"
                             )
                             entry["mouth_emb_path_second"] = load_dir / (
-                                f"mouth_emb_{entry["mouth_path_second"].stem}.pth"
+                                f"mouth_emb_{entry['mouth_path_second'].stem}.pth"
                             )
                             for mouth_name, mouth_emb_name in [
                                 ("mouth_path_first", "mouth_emb_path_first"),

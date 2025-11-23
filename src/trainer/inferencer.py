@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from tqdm.auto import tqdm
 
@@ -20,10 +22,10 @@ class Inferencer(BaseTrainer):
         config,
         device,
         dataloaders,
-        text_encoder,
         save_path,
         metrics=None,
         batch_transforms=None,
+        enhancers=None,
         skip_model_load=False,
     ):
         """
@@ -35,7 +37,6 @@ class Inferencer(BaseTrainer):
             device (str): device for tensors and model.
             dataloaders (dict[DataLoader]): dataloaders for different
                 sets of data.
-            text_encoder (CTCTextEncoder): text encoder.
             save_path (str): path to save model predictions and other
                 information.
             metrics (dict): dict with the definition of metrics for
@@ -44,6 +45,8 @@ class Inferencer(BaseTrainer):
             batch_transforms (dict[nn.Module] | None): transforms that
                 should be applied on the whole batch. Depend on the
                 tensor name.
+            enhancers (list[nn.Module] | None): enhancers that should be
+                applied on the model outputs.
             skip_model_load (bool): if False, require the user to set
                 pre-trained checkpoint path. Set this argument to True if
                 the model desirable weights are defined outside of the
@@ -61,8 +64,6 @@ class Inferencer(BaseTrainer):
         self.model = model
         self.batch_transforms = batch_transforms
 
-        self.text_encoder = text_encoder
-
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
 
@@ -79,6 +80,8 @@ class Inferencer(BaseTrainer):
             )
         else:
             self.evaluation_metrics = None
+
+        self.enhancers = enhancers
 
         if not skip_model_load:
             # init model
@@ -122,42 +125,40 @@ class Inferencer(BaseTrainer):
         """
         # TODO change inference logic so it suits ASR assignment
         # and task pipeline
-
+        if "mouth_emb_path_first" in batch and "mouth_emb_path_second" in batch:
+            batch["video_embeddings"] = torch.stack(
+                [
+                    torch.stack(
+                        [
+                            torch.load(Path(path_first), map_location=self.device),
+                            torch.load(Path(path_second), map_location=self.device),
+                        ]
+                    )
+                    for path_first, path_second in zip(
+                        batch["mouth_emb_path_first"], batch["mouth_emb_path_second"]
+                    )
+                ]
+            )
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
-
         outputs = self.model(**batch)
         batch.update(outputs)
-
+        self._apply_enhancers(batch)
+        self.rename_wav_spec(batch)
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
-
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
-
-        for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
-
-            output_id = current_id + i
-
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
-            if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
-
         return batch
+    
+    def _apply_enhancers(self, model, batch):
+        if self.enhancers is None:
+            return {}
+        for enhancer in self.enhancers:
+            enh = enhancer(model=model, **batch)
+            batch.update(enh)
 
     def _inference_part(self, part, dataloader):
         """

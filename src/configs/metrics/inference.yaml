@@ -1,0 +1,20 @@
+train: [] # metrics that are calculated during training
+inference: # metrics that are calculated during inference (eval)
+  - _target_: src.metrics.SiSnr
+    name: "SiSnri"
+    compare: "average"
+    improved: true
+    use_pit: False
+  - _target_: src.metrics.SiSdr
+    name: "SiSdri"
+    compare: "average"
+    improved: true
+    use_pit: False
+  - _target_: src.metrics.Pesq
+    name: "Pesq"
+    compare: "average"
+    sample_rate: ${sample_rate}
+  - _target_: src.metrics.Stoi
+    name: "Stoi"
+    compare: "average"
+    sample_rate: ${sample_rate}

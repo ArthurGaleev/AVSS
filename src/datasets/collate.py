@@ -1,17 +1,14 @@
 import torch
+import torch.nn.functional as F
 
 
 def collate_fn(dataset_items: list[dict]):
-    """
-    Collate and pad fields in the dataset items.
-    Converts individual items into a batch.
-
-    Args:
-        dataset_items (list[dict]): list of objects from
-            dataset.__getitem__.
-    Returns:
-        result_batch (dict[Tensor]): dict, containing batch-version
-            of the tensors.
-    """
-
-    pass  # TODO
+    assert len(dataset_items)
+    return {
+        key: (
+            torch.stack([item[key] for item in dataset_items])
+            if key in ["audio_first", "audio_second", "audio_mix"]
+            else [item[key] for item in dataset_items]
+        )
+        for key in dataset_items[0].keys()
+    }

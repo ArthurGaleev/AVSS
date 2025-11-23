@@ -1,0 +1,4 @@
+defaults:
+  - train_dataloader: train_dataloader
+  - val_dataloader: val_dataloader
+  - _self_

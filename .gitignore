@@ -107,8 +107,12 @@ saved/
 wandb/
 .cometml-runs/
 outputs/
+src/utils/lipreading/loaded_models/
 
 # editor, os cache directory
 .vscode/
 .idea/
 __MACOSX/
+
+
+uv.lock

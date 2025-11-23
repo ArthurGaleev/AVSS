@@ -1,6 +1,7 @@
 import io
 
 import matplotlib.pyplot as plt
+import numpy as np
 import PIL
 from torchvision.transforms import ToTensor
 
@@ -42,7 +43,7 @@ def plot_images(imgs, config):
     return image
 
 
-def plot_spectrogram(spectrogram, name=None):
+def plot_spectrogram(spectrogram, config):
     """
     Plot spectrogram
 
@@ -52,16 +53,29 @@ def plot_spectrogram(spectrogram, name=None):
     Returns:
         image (Image): image of the spectrogram
     """
-    plt.figure(figsize=(20, 5))
-    plt.pcolormesh(spectrogram)
-    plt.title(name)
+    fig, ax = plt.subplots(figsize=(26, 7))
+    mel_spec_config = config.model
+    hop_length = mel_spec_config["stft_hop_length"]
+    sample_rate = config.sample_rate
+    tGrid = np.arange(0, spectrogram.shape[1]) * hop_length / sample_rate
+    if "n_mels" in mel_spec_config:
+        n_mels = mel_spec_config["n_mels"]
+        fGrid = np.arange(n_mels)
+        ax.set_ylabel("Frequency, MelID", size=20)
+    else:
+        num_freq_bins = spectrogram.shape[0]
+        fGrid = np.linspace(0, sample_rate / 2, num_freq_bins)
+        ax.set_ylabel("Frequency, Hz", size=20)
+    tt, ff = np.meshgrid(tGrid, fGrid)
+    im = ax.pcolormesh(
+        tt, ff, 20 * np.log10(np.maximum(spectrogram, 1e-8)), cmap="gist_heat"
+    )
+    ax.set_xlabel("Time, sec", size=20)
+    fig.colorbar(im, ax=ax)
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)
-
-    # convert buffer to Tensor
     image = ToTensor()(PIL.Image.open(buf))
-
-    plt.close()
+    plt.close(fig)
 
     return image

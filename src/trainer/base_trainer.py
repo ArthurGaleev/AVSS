@@ -2,12 +2,14 @@ from abc import abstractmethod
 
 import torch
 from numpy import inf
+from torch.amp import GradScaler, autocast
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
 
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
+from src.utils.torch_utils import dtype_to_str, str_to_dtype
 
 
 class BaseTrainer:
@@ -22,9 +24,9 @@ class BaseTrainer:
         metrics,
         optimizer,
         lr_scheduler,
-        text_encoder,
         config,
         device,
+        dtype,
         dataloaders,
         logger,
         writer,
@@ -42,9 +44,9 @@ class BaseTrainer:
             optimizer (Optimizer): optimizer for the model.
             lr_scheduler (LRScheduler): learning rate scheduler for the
                 optimizer.
-            text_encoder (CTCTextEncoder): text encoder.
             config (DictConfig): experiment config containing training config.
             device (str): device for tensors and model.
+            dtype (torch.dtype): data type for tensors and model.
             dataloaders (dict[DataLoader]): dataloaders for different
                 sets of data.
             logger (Logger): logger that logs output.
@@ -72,8 +74,18 @@ class BaseTrainer:
         self.criterion = criterion
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.text_encoder = text_encoder
         self.batch_transforms = batch_transforms
+        self.accumulation_steps = config.trainer.get("accumulation_steps", 1)
+
+        # autocast staff
+        self.training_dtype = str_to_dtype(dtype)
+
+        is_auto_cast_enabled = self.training_dtype != torch.float32
+
+        self.autocast_context = autocast(
+            device, dtype=self.training_dtype, enabled=is_auto_cast_enabled
+        )
+        self.autocast_grad_scaler = GradScaler(device, enabled=is_auto_cast_enabled)
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -208,10 +220,14 @@ class BaseTrainer:
         for batch_idx, batch in enumerate(
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
+            is_zero_grad_step = (batch_idx % self.accumulation_steps) == 0
+            is_update_step = ((batch_idx + 1) % self.accumulation_steps) == 0
             try:
                 batch = self.process_batch(
                     batch,
                     metrics=self.train_metrics,
+                    zero_grad=is_zero_grad_step,
+                    update=is_update_step,
                 )
             except torch.cuda.OutOfMemoryError as e:
                 if self.skip_oom:
@@ -351,6 +367,20 @@ class BaseTrainer:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 
+    def rename_wav_spec(self, batch):
+        if "audio_s0" in batch:
+            batch["audio_pred_first"] = batch.pop("audio_s0")
+        if "audio_s1" in batch:
+            batch["audio_pred_second"] = batch.pop("audio_s1")
+        if "spectrogram_s0" in batch:
+            batch["spectrogram_first"] = batch.pop("spectrogram_s0")
+        if "spectrogram_s1" in batch:
+            batch["spectrogram_second"] = batch.pop("spectrogram_s1")
+        if "spectrogram_pred_s0" in batch:
+            batch["spectrogram_first"] = batch.pop("spectrogram_pred_s0")
+        if "spectrogram_pred_s1" in batch:
+            batch["spectrogram_pred_second"] = batch.pop("spectrogram_pred_s1")
+
     def transform_batch(self, batch):
         """
         Transforms elements in batch. Like instance transform inside the
@@ -371,6 +401,11 @@ class BaseTrainer:
         transforms = self.batch_transforms.get(transform_type)
         if transforms is not None:
             for transform_name in transforms.keys():
+                if (
+                    transform_name == "transfrom_spec_wav"
+                    or transform_name not in batch.keys()
+                ):
+                    continue
                 batch[transform_name] = transforms[transform_name](
                     batch[transform_name]
                 )
@@ -382,6 +417,7 @@ class BaseTrainer:
         config.trainer.max_grad_norm
         """
         if self.config["trainer"].get("max_grad_norm", None) is not None:
+            self.autocast_grad_scaler.unscale_(self.optimizer)
             clip_grad_norm_(
                 self.model.parameters(), self.config["trainer"]["max_grad_norm"]
             )
@@ -472,6 +508,7 @@ class BaseTrainer:
             "state_dict": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
+            "training_dtype": dtype_to_str(self.training_dtype),
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
@@ -502,7 +539,7 @@ class BaseTrainer:
         """
         resume_path = str(resume_path)
         self.logger.info(f"Loading checkpoint: {resume_path} ...")
-        checkpoint = torch.load(resume_path, self.device)
+        checkpoint = torch.load(resume_path, self.device, weights_only=False)
         self.start_epoch = checkpoint["epoch"] + 1
         self.mnt_best = checkpoint["monitor_best"]
 
@@ -528,6 +565,12 @@ class BaseTrainer:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
 
+        if checkpoint.get("training_dtype") != dtype_to_str(self.training_dtype):
+            self.logger.warning(
+                "Warning: training_dtype given in the config file is different "
+                "from that of the checkpoint. training_dtype parameter is not resumed."
+            )
+
         self.logger.info(
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"
         )
@@ -548,7 +591,7 @@ class BaseTrainer:
             self.logger.info(f"Loading model weights from: {pretrained_path} ...")
         else:
             print(f"Loading model weights from: {pretrained_path} ...")
-        checkpoint = torch.load(pretrained_path, self.device)
+        checkpoint = torch.load(pretrained_path, self.device, weights_only=False)
 
         if checkpoint.get("state_dict") is not None:
             self.model.load_state_dict(checkpoint["state_dict"])

@@ -28,7 +28,7 @@ def set_worker_seed(worker_id):
     random.seed(worker_seed)
 
 
-def set_random_seed(seed):
+def set_random_seed(seed, save_reproducibility: bool = True):
     """
     Set random seed for model training or inference.
 
@@ -37,9 +37,9 @@ def set_random_seed(seed):
     """
     # fix random seeds for reproducibility
     torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.deterministic = save_reproducibility
     # benchmark=True works faster but reproducibility decreases
-    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark = not save_reproducibility
     np.random.seed(seed)
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -160,3 +160,26 @@ def setup_saving_and_logging(config):
     logger.setLevel(logging.DEBUG)
 
     return logger
+
+
+def select_most_suitable_gpu():
+    """
+    Select the most suitable GPU based on available memory.
+    Returns:
+        best_gpu (str): device string of the most suitable GPU.
+        free_memories (list): list of free memory for each GPU.
+    """
+    torch.cuda.empty_cache()
+
+    # Find most free GPU
+    num_gpus = torch.cuda.device_count()
+    assert num_gpus != 0, "CUDA device not found"
+
+    free_memories = []
+    for i in range(num_gpus):
+        info = torch.cuda.mem_get_info(i)
+        free_memories.append(info[0])
+
+    best_gpu = free_memories.index(max(free_memories))
+
+    return f"cuda:{best_gpu}", max(free_memories)

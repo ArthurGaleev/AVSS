@@ -15,13 +15,11 @@ class VPEncoder(nn.Module):
         self,
         in_channels: int,
         compressed_channels: int,
-        num_scales: int = 3,
         downsample_units: int = 2,
         heads: int = 4,
     ):
         super().__init__()
         self.in_channels = in_channels
-        self.num_scales = num_scales
         self.D = compressed_channels
 
         self.compressor = CompressorBlock(

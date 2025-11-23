@@ -34,7 +34,6 @@ class RTFSModel(nn.Module):
         tf_channels: int = 256,
         num_rtfs_blocks: int = 2,
         rtfs_compressed_channels: int = 128,
-        rtfs_num_scales: int = 3,
         rtfs_sru_hidden_size: int = 128,
         rtfs_attention_heads: int = 4,
         rtfs_tfar_units: int = 2,
@@ -54,7 +53,6 @@ class RTFSModel(nn.Module):
             tf_channels: number of channels in TF encoder/decoder
             num_rtfs_blocks: number of RTFS blocks to use
             rtfs_compressed_channels: number of compressed channels in RTFS blocks
-            rtfs_num_scales: number of scales in RTFS blocks
             rtfs_sru_hidden_size: hidden size for SRU in RTFS blocks
             rtfs_attention_heads: number of attention heads in RTFS blocks
             rtfs_tfar_units: number of TF-AR reconstruction units in RTFS blocks
@@ -102,7 +100,8 @@ class RTFSModel(nn.Module):
             self.vp_block = VPEncoder(
                 in_channels=encoder_channels,
                 compressed_channels=rtfs_compressed_channels,
-                num_scales=rtfs_num_scales,
+                downsample_units=rtfs_tfar_units,
+                heads=rtfs_attention_heads,
             )
             self.caf_block = RTFSCAFBlock(
                 visual_channels=encoder_channels,

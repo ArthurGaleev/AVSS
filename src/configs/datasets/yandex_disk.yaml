@@ -8,3 +8,4 @@ val:
   instance_transforms: ${transforms.instance_transforms.train}
   download_name: ${download_name}
   part: "val"
+  limit: 500

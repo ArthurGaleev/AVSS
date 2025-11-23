@@ -4,7 +4,7 @@ _target_: src.model.RTFSModel
 n_speakers: 2
 
 # Encoder configuration
-encoder_channels: 256
+encoder_channels: 50
 
 # Video configuration
 use_video: true

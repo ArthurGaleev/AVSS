@@ -11,7 +11,7 @@ class AudioSiSnrRTFS(torch.nn.Module):
         super().__init__(*args, **kwargs)
 
         self.metric = SiSnr(
-            improved=False, use_pit=False
+            compare="average", improved=False, use_pit=False
         )  # Avoid calculating constant term
 
     def forward(

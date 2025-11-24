@@ -24,7 +24,6 @@ class Pesq(BaseMetric):
         audio_first,
         audio_pred_second,
         audio_second,
-        audio_mix,
         **batch,
     ):
         audio_first = audio_first.to(audio_pred_first.device)

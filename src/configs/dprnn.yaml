@@ -1,0 +1,37 @@
+defaults:
+  - model: dprnn
+  - writer: wandb
+  - metrics: all_metrics
+  - datasets: yandex_disk
+  - dataloader: train_val_dataloaders
+  - transforms: example_only_instance
+  - _self_
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 1e-3
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: 2
+  gamma: 0.98
+loss_function:
+  _target_: src.loss.AudioSiSnr
+download_name: "dla_dataset"
+batch_size: 4
+num_workers: 2
+sample_rate: 16000
+trainer:
+  log_step: 50
+  n_epochs: 100
+  epoch_len: 200
+  device_tensors: ["audio_first", "audio_second", "audio_mix"] # which tensors should be on device (ex. GPU)
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  device: auto # device name or "auto"
+  override: False # if True, will override the previous run with the same name
+  monitor: "max val_SiSnri" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
+  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  accumulation_steps: 1
+  save_dir: "saved"
+  dir_created: False
+  parallel: False
+  seed: 1

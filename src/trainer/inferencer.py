@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from tqdm.auto import tqdm
 
@@ -23,6 +25,7 @@ class Inferencer(BaseTrainer):
         save_path,
         metrics=None,
         batch_transforms=None,
+        enhancers=None,
         skip_model_load=False,
     ):
         """
@@ -42,6 +45,8 @@ class Inferencer(BaseTrainer):
             batch_transforms (dict[nn.Module] | None): transforms that
                 should be applied on the whole batch. Depend on the
                 tensor name.
+            enhancers (list[nn.Module] | None): enhancers that should be
+                applied on the model outputs.
             skip_model_load (bool): if False, require the user to set
                 pre-trained checkpoint path. Set this argument to True if
                 the model desirable weights are defined outside of the
@@ -75,6 +80,8 @@ class Inferencer(BaseTrainer):
             )
         else:
             self.evaluation_metrics = None
+
+        self.enhancers = enhancers
 
         if not skip_model_load:
             # init model
@@ -118,13 +125,26 @@ class Inferencer(BaseTrainer):
         """
         # TODO change inference logic so it suits ASR assignment
         # and task pipeline
-
+        if "mouth_emb_path_first" in batch and "mouth_emb_path_second" in batch:
+            batch["video_embeddings"] = torch.stack(
+                [
+                    torch.stack(
+                        [
+                            torch.load(Path(path_first), map_location=self.device),
+                            torch.load(Path(path_second), map_location=self.device),
+                        ]
+                    )
+                    for path_first, path_second in zip(
+                        batch["mouth_emb_path_first"], batch["mouth_emb_path_second"]
+                    )
+                ]
+            )
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
-        batch.update(self.transform_batch(self.get_spectrogram(batch)))
         outputs = self.model(**batch)
         batch.update(outputs)
-        batch.update(self.reconstruct_wav(batch))
+        self._apply_enhancers(batch)
+        self.rename_wav_spec(batch)
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
@@ -132,6 +152,13 @@ class Inferencer(BaseTrainer):
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
         return batch
+    
+    def _apply_enhancers(self, model, batch):
+        if self.enhancers is None:
+            return {}
+        for enhancer in self.enhancers:
+            enh = enhancer(model=model, **batch)
+            batch.update(enh)
 
     def _inference_part(self, part, dataloader):
         """

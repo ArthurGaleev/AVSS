@@ -1,10 +1,10 @@
 train:
   _target_: src.datasets.YandexDownload
   instance_transforms: ${transforms.instance_transforms.train}
-  download_name: "/kaggle/input/audio-visual-source-separation/dla_dataset"
+  data_dir: /kaggle/input/dla_dataset
   part: "train"
 val:
   _target_: src.datasets.YandexDownload
   instance_transforms: ${transforms.instance_transforms.train}
-  download_name: "/kaggle/input/audio-visual-source-separation/dla_dataset"
+  data_dir: /kaggle/input/dla_dataset
   part: "val"

@@ -1,0 +1,43 @@
+defaults:
+  - model: rtfs
+  - writer: wandb
+  - metrics: rtfs_training
+  - datasets: yandex_disk
+  - dataloader: train_val_dataloaders
+  - transforms: rtfs
+  - _self_
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 1e-3
+  weight_decay: 0.1
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.OneCycleLR
+  max_lr: 6e-4
+  pct_start: 0.02
+  div_factor: 10.0
+  final_div_factor: 10.0
+  steps_per_epoch: ${trainer.epoch_len}
+  epochs: ${trainer.n_epochs}
+  anneal_strategy: cos
+loss_function:
+  _target_: src.loss.AudioSiSnrRTFS
+download_name: "dla_dataset"
+batch_size: 8
+num_workers: 8
+sample_rate: 16000
+trainer:
+  log_step: 50
+  n_epochs: 60
+  epoch_len: 500
+  device_tensors: ["audio_first", "audio_second", "audio_mix", "video_embeddings"] # which tensors should be on device (ex. GPU)
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  device: auto # device name or "auto"
+  override: True # if True, will override the previous run with the same name
+  monitor: "max val_SiSnri" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  save_period: 100000 # checkpoint each save_period epochs in addition to the best epoch
+  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  save_dir: "saved-v"
+  dir_created: False
+  parallel: False
+  seed: 1
+  lipreading_model_name: "resnet18_dctcn" # pretrained model from mpc001 repo (check src\utils\lipreading\load_model.py for the correct name)

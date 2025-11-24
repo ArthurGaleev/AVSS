@@ -1,5 +1,5 @@
-from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality
-from torchmetrics.audio.stoi import ShortTimeObjectiveIntelligibility
+from torchmetrics.functional.audio.pesq import perceptual_evaluation_speech_quality
+from torchmetrics.functional.audio.stoi import short_time_objective_intelligibility
 from torchmetrics.functional.audio.sdr import (
     scale_invariant_signal_distortion_ratio,
     signal_distortion_ratio,
@@ -39,12 +39,11 @@ def pesq(sample_rate):
         16000,
         8000,
     ], "Pesq metric is not implemented for sample rates not 16kHz or 8kHz"
-    return PerceptualEvaluationSpeechQuality(sample_rate, "wb")
-
+    return lambda p, t: perceptual_evaluation_speech_quality(p, t, sample_rate, "wb", keep_same_device=True, n_processes=8)
 
 def stoi(sample_rate):
     assert sample_rate in [
         16000,
         10000,
     ], "Stoi metric is not implemented for sample rates not 16kHz or 10kHz"
-    return ShortTimeObjectiveIntelligibility(sample_rate)
+    return lambda p, t: short_time_objective_intelligibility(p, t, sample_rate, keep_same_device=True)

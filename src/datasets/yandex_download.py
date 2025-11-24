@@ -1,6 +1,7 @@
 import io
 import os
 import zipfile
+from pathlib import Path
 from urllib.parse import urlencode
 
 import requests
@@ -39,20 +40,27 @@ class YandexDownload(CustomDirAudioDataset):
     ):
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets"
-        if not (data_dir / download_name / "audio" / part).exists():
-            data_dir.mkdir(exist_ok=True, parents=True)
-            download_info = YANDEX_URL[download_name]
-            final_url = download_info["base_url"] + urlencode(
-                dict(public_key=download_info["public_key"])
-            )
-            response = requests.get(final_url)
-            download_url = response.json()["href"]
-            print("Downloading zip data...")
-            download_response = requests.get(download_url)
-            print("Successfully downloaded")
-            zip = zipfile.ZipFile(io.BytesIO(download_response.content))
-            zip.extractall(data_dir)
-        data_dir = data_dir / download_name / "audio" / part
+            if not (data_dir / download_name / "audio" / part).exists():
+                data_dir.mkdir(exist_ok=True, parents=True)
+                download_info = YANDEX_URL[download_name]
+                final_url = download_info["base_url"] + urlencode(
+                    dict(public_key=download_info["public_key"])
+                )
+                response = requests.get(final_url)
+                download_url = response.json()["href"]
+                print("Downloading zip data...")
+                download_response = requests.get(download_url)
+                print("Successfully downloaded")
+                zip = zipfile.ZipFile(io.BytesIO(download_response.content))
+                zip.extractall(data_dir)
+            data_dir = data_dir / download_name
+        else:
+            data_dir = Path(data_dir)
         super().__init__(
-            data_dir / "mix", data_dir / "s1", data_dir / "s2", *args, **kwargs
+            data_dir / "audio" / part / "mix",
+            data_dir / "audio" / part / "s1",
+            data_dir / "audio" / part / "s2",
+            data_dir / "mouths",
+            *args,
+            **kwargs,
         )

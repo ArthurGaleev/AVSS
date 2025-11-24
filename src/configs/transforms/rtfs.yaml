@@ -1,4 +1,4 @@
 defaults:
-  - batch_transforms: example
+  - batch_transforms: rtfs
   - instance_transforms: example
   - _self_

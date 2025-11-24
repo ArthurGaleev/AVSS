@@ -1,6 +1,7 @@
 import logging
 import random
 from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -27,6 +28,7 @@ class BaseDataset(Dataset):
         max_audio_length=None,
         shuffle_index=False,
         instance_transforms=None,
+        device=None,
     ):
         """
         Args:
@@ -42,7 +44,10 @@ class BaseDataset(Dataset):
             instance_transforms (dict[Callable] | None): transforms that
                 should be applied on the instance. Depend on the
                 tensor name.
+            lipreading_model (nn.Module): Pytorch lipreading model for video
+                moddality.
         """
+        assert device is not None
         self._assert_index_is_valid(index)
 
         index = self._filter_records_from_dataset(index, max_audio_length)
@@ -53,6 +58,7 @@ class BaseDataset(Dataset):
         self._index: list[dict] = index
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
+        self.device = device
 
     def __getitem__(self, ind):
         """
@@ -186,6 +192,12 @@ class BaseDataset(Dataset):
             ), (
                 "Each dataset item should include field 'path'" " - path to audio file."
             )
+            assert (
+                "mouth_emb_path_first" in entry
+                and "mouth_emb_path_second" in entry
+                and "mouth_path_first" in entry
+                and "mouth_path_second" in entry
+            ), "Each dataset item should include fields with mouth paths and emb path"
             assert "audio_len" in entry, (
                 "Each dataset item should include field 'audio_len'"
                 " - length of the audio."

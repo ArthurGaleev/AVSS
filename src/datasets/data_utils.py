@@ -61,12 +61,15 @@ def get_dataloaders(config, device):
     # transforms or augmentations init
     batch_transforms = instantiate(config.transforms.batch_transforms)
     move_transforms_to_device(batch_transforms, device)
+
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
         # dataset partition init
         dataset = instantiate(
-            config.datasets[dataset_partition]
+            config.datasets[dataset_partition],
+            lipreading_model_name=config.trainer.lipreading_model_name,
+            device=device,
         )  # instance transforms are defined inside
 
         assert config.batch_size <= len(dataset), (

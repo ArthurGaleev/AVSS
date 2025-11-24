@@ -1,16 +1,23 @@
 defaults:
-  - model: baseline
-  - metrics: all_metrics
-  - datasets: yandex_disk_small # we do not want to run inference on training data
-  - dataloader: example
-  - transforms: example
+  - model: rtfs
+  - metrics: inference
+  - datasets: yandex_disk_inference
+  - dataloader: train_val_dataloaders
+  - transforms: rtfs
   - _self_
+download_name: "dla_dataset"
+batch_size: 8
+num_workers: 8
 sample_rate: 16000
 inferencer:
-  device_tensors: ["audio_first", "audio_second", "audio_mix"] # which tensors should be on device (ex. GPU)
+  device_tensors: ["audio_first", "audio_second", "audio_mix", "video_embeddings"] # which tensors should be on device (ex. GPU)
   device: auto # device name or "auto"
-  save_path: "example" # any name here, can be a dataset name
+  save_path: "inference/rtfs" # any name here, can be a dataset name
   seed: 1
+<<<<<<< HEAD
   from_pretrained: "saved/model_best.pth" # path to the pretrained model
   dtype: "float32" # inference dtype: "float32", "float16", "bfloat16"
   tf32_allowance: false # allow TF32 mode on Ampere GPUs
+=======
+  from_pretrained: "saved/rtfs-net-3-v/model_best.pth" # path to the pretrained model
+>>>>>>> main

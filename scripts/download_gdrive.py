@@ -5,16 +5,16 @@ import gdown
 
 GDRIVE_URLS = {
     "models": {
-        # rtfs-3-reuse
-        "https://drive.google.com/uc?id=1WEyZU-K8g4T78vqWC42Q95xM3TwJnLva": "data/models/rtfs-3-reuse.pth",
         # rtfs-4-reuse
-        "https://drive.google.com/uc?id=1OEUmP39sh1aMze6RxUVmJZbuO66FkA8B": "data/models/rtfs-4-reuse.pth",
+        "https://drive.google.com/uc?id=1lzO_cyN0WKof1rtnCPZpN-BHcELO-85c": "data/models/rtfs-4-reuse.pth",
         # rtfs-3-no-video
         "https://drive.google.com/uc?id=1FMlXhzC_3-AuLKo30rvCgH0PRwVJo-tM": "data/models/rtfs-3-no-video.pth",
         # rtfs-11-reuse
         "https://drive.google.com/uc?id=13r68YvHAvXJzcTwH5D5M7oHg2lk9js_e": "data/models/rtfs-11-reuse.pth",
         # rtfs-3
         "https://drive.google.com/uc?id=1CGfWvINud5d9tppRq3tnJNqDYgC65uX9": "data/models/rtfs-3.pth",
+        # dprnn
+        "https://drive.google.com/uc?id=1IU4mFseGPtac6g58jTS48GzlMI1wMJQ8": "data/models/dprnn.pth",
     },
     "dataset": {
         "https://drive.google.com/uc?id=178uAdx9S6lln1z0Yr9ws-tBpmDkSuHqD": "data/datasets/dla_dataset_small_av"

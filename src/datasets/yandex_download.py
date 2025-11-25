@@ -48,6 +48,7 @@ class YandexDownload(CustomDirAudioDataset):
                 )
                 response = requests.get(final_url)
                 download_url = response.json()["href"]
+
                 print("Downloading zip data...")
                 download_response = requests.get(download_url)
                 print("Successfully downloaded")
@@ -56,11 +57,21 @@ class YandexDownload(CustomDirAudioDataset):
             data_dir = data_dir / download_name
         else:
             data_dir = Path(data_dir)
-        super().__init__(
-            data_dir / "audio" / part / "mix",
-            data_dir / "audio" / part / "s1",
-            data_dir / "audio" / part / "s2",
-            data_dir / "mouths",
-            *args,
-            **kwargs,
-        )
+        if part == "train" or part == "val":
+            super().__init__(
+                data_dir / "audio" / part / "mix",
+                data_dir / "audio" / part / "s1",
+                data_dir / "audio" / part / "s2",
+                data_dir / "mouths",
+                *args,
+                **kwargs,
+            )
+        else:
+            super().__init__(
+                data_dir / "audio" / part / "mix",
+                None,
+                None,
+                data_dir / "mouths",
+                *args,
+                **kwargs,
+            )

@@ -76,12 +76,14 @@ class BaseDataset(Dataset):
                 (a single dataset element).
         """
         data_dict = deepcopy(self._index[ind])
-        data_dict["audio_first"] = self.load_audio(
-            data_dict["audio_path_first"]
-        ).squeeze()
-        data_dict["audio_second"] = self.load_audio(
-            data_dict["audio_path_second"]
-        ).squeeze()
+        if "audio_path_first" in data_dict:
+            data_dict["audio_first"] = self.load_audio(
+                data_dict["audio_path_first"]
+            ).squeeze()
+        if "audio_path_second" in data_dict:
+            data_dict["audio_second"] = self.load_audio(
+                data_dict["audio_path_second"]
+            ).squeeze()
         data_dict["audio_mix"] = self.load_audio(data_dict["audio_path_mix"]).squeeze()
         data_dict = self.preprocess_data(data_dict)  # use only wave augs
         return data_dict
@@ -185,19 +187,9 @@ class BaseDataset(Dataset):
         """
         audio_len = None
         for entry in index:
-            assert (
-                "audio_path_mix" in entry
-                and "audio_path_first" in entry
-                and "audio_path_second" in entry
-            ), (
+            assert "audio_path_mix" in entry, (
                 "Each dataset item should include field 'path'" " - path to audio file."
             )
-            assert (
-                "mouth_emb_path_first" in entry
-                and "mouth_emb_path_second" in entry
-                and "mouth_path_first" in entry
-                and "mouth_path_second" in entry
-            ), "Each dataset item should include fields with mouth paths and emb path"
             assert "audio_len" in entry, (
                 "Each dataset item should include field 'audio_len'"
                 " - length of the audio."

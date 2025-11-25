@@ -10,66 +10,56 @@
 
 ## About
 
-This repository contains a template for solving ASR task with PyTorch. This template branch is a part of the [HSE DLA course](https://github.com/markovka17/dla) ASR homework. Some parts of the code are missing (or do not follow the most optimal design choices...) and students are required to fill these parts themselves (as well as writing their own models, etc.).
+Implementation of the AVSS models based on the articles:
 
-See the task assignment [here](https://github.com/markovka17/dla/tree/2024/hw1_asr).
+[RTFS-NET: RECURRENT TIME-FREQUENCY MODELLING FOR EFFICIENT AUDIO-VISUAL SPEECH SEPARATION](https://arxiv.org/pdf/2309.17189).
 
+[DUAL-PATH RNN: EFFICIENT LONG SEQUENCE MODELING FOR
+TIME-DOMAIN SINGLE-CHANNEL SPEECH SEPARATION](https://arxiv.org/pdf/1910.06379).
 ## Installation
 
-Follow these steps to install the project:
-
-0. (Optional) Create and activate new environment using [`conda`](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) or `venv` ([`+pyenv`](https://github.com/pyenv/pyenv)).
-
-   a. `conda` version:
-
+1. Install uv
    ```bash
-   # create env
-   conda create -n project_env python=PYTHON_VERSION
-
-   # activate env
-   conda activate project_env
+   pip install uv
    ```
-
-   b. `venv` (`+pyenv`) version:
+2. Install all required packages
 
    ```bash
-   # create env
-   ~/.pyenv/versions/PYTHON_VERSION/bin/python3 -m venv project_env
-
-   # alternatively, using default python version
-   python3 -m venv project_env
-
-   # activate env
-   source project_env/bin/activate
+   uv init
+   uv sync
    ```
-
-1. Install all required packages
+2. Download all required models and dataset:
 
    ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Install `pre-commit`:
-   ```bash
-   pre-commit install
+   uv run scripts/download_gdrive.py
    ```
 
 ## How To Use
-
-To train a model, run the following command:
+Before using model should make the env YANDEX_DISK_URL global depending on the dataset you want to download from yandex disk(example with our dataset):
+```bash
+   export YANDEX_DISK_URL=https://disk.360.yandex.ru/d/5pz96ysIZi33IQ
+```
+To train our best rtfs model, run the following command:
 
 ```bash
-python3 train.py -cn=CONFIG_NAME HYDRA_CONFIG_ARGUMENTS
+   uv run train.py
 ```
-
-Where `CONFIG_NAME` is a config from `src/configs` and `HYDRA_CONFIG_ARGUMENTS` are optional arguments.
-
-To run inference (evaluate the model or save predictions):
+To train our best dprnn model, run the following command:
 
 ```bash
-python3 inference.py HYDRA_CONFIG_ARGUMENTS
+   uv run train.py
 ```
 
+To run inference on our best rtfs checkpoint(rtfs-3-reuse):
+Using Yandex disk dataset(need to export, see above):
+
+```bash
+   uv run inference.py inferencer.save_path="pred_small_av" inferencer.from_pretrained="data/models/rtfs-3-reuse.pth" download_name=dla_dataset_small_av model=rtfs-3-reuse -cn=inference
+```
+Inference our best rtfs checkpoint on downloaded dataset(YOUR_FOLDER should be in data/datasets folder):
+```bash
+   uv run inference.py inferencer.save_path=PRED_FOLDER_NAME inferencer.from_pretrained="data/models/rtfs-3-reuse.pth" download_name=YOUR_FOLDER model=rtfs-3-reuse -cn=inference
+```
 ## Credits
 
 This repository is based on a [PyTorch Project Template](https://github.com/Blinorot/pytorch_project_template).

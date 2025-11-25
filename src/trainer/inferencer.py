@@ -1,10 +1,12 @@
 from pathlib import Path
 
 import torch
+import torchaudio
 from tqdm.auto import tqdm
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
+from src.utils.io_utils import ROOT_PATH
 
 
 class Inferencer(BaseTrainer):
@@ -151,13 +153,33 @@ class Inferencer(BaseTrainer):
 
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
+        save_dir_s1 = Path(self.save_path) / part / "s1"
+        save_dir_s2 = Path(self.save_path) / part / "s2"
+        save_dir_s1.mkdir(parents=True, exist_ok=True)
+        save_dir_s2.mkdir(parents=True, exist_ok=True)
+        batch_size = batch["audio_pred_first"].shape[0]
+        for i in range(batch_size):
+            pred_audio_first = batch["audio_pred_first"][i].clone().unsqueeze(0).cpu()
+            pred_audio_second = batch["audio_pred_second"][i].clone().unsqueeze(0).cpu()
+            path_name = Path(batch["audio_path_mix"][i]).name
+            if self.save_path is not None:
+                torchaudio.save(
+                    save_dir_s1 / path_name,
+                    pred_audio_first,
+                    sample_rate=self.config.sample_rate,
+                )
+                torchaudio.save(
+                    save_dir_s2 / path_name,
+                    pred_audio_second,
+                    sample_rate=self.config.sample_rate,
+                )
         return batch
-    
-    def _apply_enhancers(self, model, batch):
+
+    def _apply_enhancers(self, batch):
         if self.enhancers is None:
             return {}
         for enhancer in self.enhancers:
-            enh = enhancer(model=model, **batch)
+            enh = enhancer(model=self.model, **batch)
             batch.update(enh)
 
     def _inference_part(self, part, dataloader):
@@ -186,11 +208,19 @@ class Inferencer(BaseTrainer):
                 desc=part,
                 total=len(dataloader),
             ):
-                batch = self.process_batch(
-                    batch_idx=batch_idx,
-                    batch=batch,
-                    part=part,
-                    metrics=self.evaluation_metrics,
-                )
+                if part == "val" or part == "train":
+                    batch = self.process_batch(
+                        batch_idx=batch_idx,
+                        batch=batch,
+                        part=part,
+                        metrics=self.evaluation_metrics,
+                    )
+                else:
+                    batch = self.process_batch(
+                        batch_idx=batch_idx,
+                        batch=batch,
+                        part=part,
+                        metrics=None,
+                    )
 
         return self.evaluation_metrics.result()

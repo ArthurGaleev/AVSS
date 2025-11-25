@@ -50,7 +50,9 @@ def calculate_metrics(gt_s1_path, gt_s2_path, pred_s1_path, pred_s2_path):
 
         # Stack references and estimates
         references = torch.from_numpy(np.stack([gt_s1, gt_s2], axis=0))
-        mix = torch.from_numpy(np.stack([gt_s1 + gt_s2, gt_s1 + gt_s2], axis=0))
+        mix = torch.from_numpy(
+            np.stack([gt_s1 + gt_s2, gt_s1 + gt_s2], axis=0)
+        )  # this need change
         estimates = torch.from_numpy(np.stack([pred_s1, pred_s2], axis=0))
 
         # Calculate metrics

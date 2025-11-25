@@ -42,14 +42,14 @@ Before using model should make the env YANDEX_DISK_URL global depending on the d
 To train our best rtfs model, run the following command:
 
 ```bash
-   uv run train.py
+   uv run train.py model=rtfs-4-reuse -cn=rtfs-net
 ```
 To train our best dprnn model, run the following command:
 
 ```bash
-   uv run train.py
+   uv run train.py -cn=dprnn
 ```
-
+(more details in report)
 To run inference on our best rtfs checkpoint(rtfs-3-reuse):
 Using Yandex disk dataset(need to export, see above):
 

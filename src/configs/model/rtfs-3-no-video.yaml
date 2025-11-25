@@ -1,0 +1,26 @@
+_target_: src.model.RTFSModel
+
+# Number of speakers to separate
+n_speakers: 2
+
+# Encoder configuration
+encoder_channels: 256
+
+# Video configuration
+use_video: false
+
+# RTFS time–frequency path configuration
+tf_channels: 256
+num_rtfs_blocks: 2
+rtfs_compressed_channels: 128
+rtfs_sru_hidden_size: 128
+rtfs_attention_heads: 4
+rtfs_tfar_units: 2
+reuse_rtfs_blocks: false
+
+# STFT parameters
+stft_n_fft: 512
+stft_win_length: 400
+stft_hop_length: 160
+sample_rate: 16000
+transforms: null

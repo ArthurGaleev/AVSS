@@ -24,7 +24,7 @@ def main(config):
         config (DictConfig): hydra experiment config.
     """
     set_random_seed(
-        config.inferencer.seed, config.trainer.get("save_reproducibility", True)
+        config.inferencer.seed, config.inferencer.get("save_reproducibility", True)
     )
     set_tf32_allowance(config.inferencer.get("tf32_allowance", False))
 

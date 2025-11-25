@@ -68,7 +68,7 @@ def get_dataloaders(config, device):
         # dataset partition init
         dataset = instantiate(
             config.datasets[dataset_partition],
-            lipreading_model_name=config.trainer.lipreading_model_name,
+            lipreading_model_name=config.lipreading_model_name,
             device=device,
         )  # instance transforms are defined inside
 

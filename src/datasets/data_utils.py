@@ -65,6 +65,8 @@ def get_dataloaders(config, device):
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
+        if config.datasets[dataset_partition] is None:
+            continue
         # dataset partition init
         dataset = instantiate(
             config.datasets[dataset_partition],

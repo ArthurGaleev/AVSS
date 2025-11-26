@@ -157,10 +157,19 @@ class Inferencer(BaseTrainer):
         save_dir_s2 = Path(self.save_path) / part / "s2"
         save_dir_s1.mkdir(parents=True, exist_ok=True)
         save_dir_s2.mkdir(parents=True, exist_ok=True)
+        save_dir_s1_target = Path(self.save_path) / part / "target_s1"
+        save_dir_s2_target = Path(self.save_path) / part / "target_s2"
+        save_dir_s1_target.mkdir(parents=True, exist_ok=True)
+        save_dir_s2_target.mkdir(parents=True, exist_ok=True)
+        save_dir_mix = Path(self.save_path) / part / "mix"
+        save_dir_mix.mkdir(parents=True, exist_ok=True)
         batch_size = batch["audio_pred_first"].shape[0]
         for i in range(batch_size):
             pred_audio_first = batch["audio_pred_first"][i].clone().unsqueeze(0).cpu()
             pred_audio_second = batch["audio_pred_second"][i].clone().unsqueeze(0).cpu()
+            audio_first = batch["audio_first"][i].clone().unsqueeze(0).cpu()
+            audio_second = batch["audio_second"][i].clone().unsqueeze(0).cpu()
+            audio_mix = batch["audio_mix"][i].clone().unsqueeze(0).cpu()
             path_name = Path(batch["audio_path_mix"][i]).name
             if self.save_path is not None:
                 torchaudio.save(
@@ -171,6 +180,21 @@ class Inferencer(BaseTrainer):
                 torchaudio.save(
                     save_dir_s2 / path_name,
                     pred_audio_second,
+                    sample_rate=self.config.sample_rate,
+                )
+                torchaudio.save(
+                    save_dir_s1_target / path_name,
+                    audio_first,
+                    sample_rate=self.config.sample_rate,
+                )
+                torchaudio.save(
+                    save_dir_s2_target / path_name,
+                    audio_second,
+                    sample_rate=self.config.sample_rate,
+                )
+                torchaudio.save(
+                    save_dir_mix / path_name,
+                    audio_mix,
                     sample_rate=self.config.sample_rate,
                 )
         return batch

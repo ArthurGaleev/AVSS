@@ -19,6 +19,7 @@ download_name: "dla_dataset"
 batch_size: 4
 num_workers: 2
 sample_rate: 16000
+use_pit: True
 trainer:
   log_step: 50
   n_epochs: 100

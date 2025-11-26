@@ -1,21 +1,21 @@
 inference: # metrics that are calculated during inference (eval)
   - _target_: src.metrics.SiSnr
     name: "SiSnri"
-    compare: ${compare}
-    improved: ${improved}
+    compare: "average"
+    improved: True
     use_pit: ${use_pit}
   - _target_: src.metrics.SiSdr
     name: "SiSdri"
-    compare: ${compare}
-    improved: ${improved}
+    compare: "average"
+    improved: True
     use_pit: ${use_pit}
   - _target_: src.metrics.Pesq
     name: "Pesq"
-    compare: ${compare}
+    compare: "average"
     sample_rate: ${sample_rate}
     use_pit: ${use_pit}
   - _target_: src.metrics.Stoi
     name: "Stoi"
-    compare: ${compare}
+    compare: "average"
     sample_rate: ${sample_rate}
     use_pit: ${use_pit}

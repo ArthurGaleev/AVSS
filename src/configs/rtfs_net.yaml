@@ -27,8 +27,6 @@ num_workers: 8
 sample_rate: 16000
 lipreading_model_name: "resnet18_dctcn" # pretrained model from mpc001 repo (check src\utils\lipreading\load_model.py for the correct name)
 #for metric
-compare: "average"
-improved: true
 use_pit: False
 trainer:
   log_step: 50

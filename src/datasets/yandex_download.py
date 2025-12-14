@@ -57,11 +57,24 @@ class YandexDownload(CustomDirAudioDataset):
                 **kwargs,
             )
         else:
-            super().__init__(
-                data_dir / "audio" / part / "mix",
-                None,
-                None,
-                data_dir / "mouths",
-                *args,
-                **kwargs,
-            )
+            if (
+                (data_dir / "audio" / part / "s1").exists() and 
+                (data_dir / "audio" / part / "s2").exists()
+            ):
+                super().__init__(
+                    data_dir / "audio" / part / "mix",
+                    data_dir / "audio" / part / "s1",
+                    data_dir / "audio" / part / "s2",
+                    data_dir / "mouths",
+                    *args,
+                    **kwargs,
+                )
+            else:
+                super().__init__(
+                    data_dir / "audio" / part / "mix",
+                    None,
+                    None,
+                    data_dir / "mouths",
+                    *args,
+                    **kwargs,
+                )
